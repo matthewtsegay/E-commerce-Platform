@@ -1,0 +1,42 @@
+[[source]]
+url = "https://pypi.org/simple/"
+verify_ssl = true
+name = "pip_conf_index_global"
+
+[packages]
+django-debug-toolbar = "*"
+drf-nested-routers = "*"
+django-filter = "*"
+drf-spectacular = "*"
+drf-spectacular-sidecar = "*"
+djoser = "*"
+djangorestframework-simplejwt = "*"
+django-environ = "*"
+python-dotenv = "*"
+python-decouple = "*"
+django-templated-mail = "*"
+celery = "*"
+redis = "*"
+flower = "*"
+pytest-django = "*"
+django-redis = "*"
+whitenoise = "*"
+django-silk = "*"
+matplotlib = "*"
+plotly = "*"
+pillow = "*"
+gunicorn = "*"
+dj-database-url = "*"
+djangorestframework = "*"
+django-cors-headers = "*"
+psycopg2-binary = "*"
+
+[dev-packages]
+pytest-django = "*"
+pytest-watch = "*"
+model-bakery = "*"
+pytest = "*"
+locust = "*"
+
+[requires]
+python_version = "3.13"

@@ -1,0 +1,6 @@
+{
+  "name": "Nebi Store",
+  "description": "A modern, high-performance e-commerce storefront for Nebi Store, powered by Django REST Framework.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
