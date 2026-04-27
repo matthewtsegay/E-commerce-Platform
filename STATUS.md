@@ -8,9 +8,9 @@ All core features, admin suite, validation, and API integration are done.
 ## 🔧 Tasks Left
 
 ### 🔴 Critical (Must Fix Before Going Live)
-- [ ] **Start PostgreSQL** on port 5433 — backend won't run without it
-- [ ] **Analytics JWT support** — `/analytics/data/` uses session auth, not JWT; needs a DRF-compatible view added to backend
-- [ ] **Chapa payment** — gateway is integrated in backend but needs live API keys + end-to-end test
+- [x] **Start PostgreSQL** on port 5433 — backend won't run without it
+- [x] **Analytics JWT support** — `/analytics/data/` uses session auth, not JWT; needs a DRF-compatible view added to backend
+- [x] **Chapa payment** — gateway is integrated in backend but needs live API keys + end-to-end test
 - [x] **Product image upload** in admin UI — file input POSTing to `/store/products/{id}/images/`, image preview grid, delete image, 5MB limit
 
 ### 🟡 Important (Before Selling)
