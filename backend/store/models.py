@@ -52,13 +52,46 @@ class Product(models.Model):
     discount_active = models.BooleanField(default=False)
     discount_label = models.CharField(max_length=50, null=True, blank=True)
 
+    def get_active_promotion(self):
+        """
+        Helper to get the first available promotion. 
+        Uses prefetched cache if available to avoid N+1 queries.
+        """
+        promos = getattr(self, "_prefetched_promotions_cache", None)
+        if promos is not None:
+            return promos[0] if promos else None
+        return self.promotions.first()
+
     def get_discounted_price(self):
+        """
+        Unified logic: 
+        1. Prefer inline product discount (percent or fixed).
+        2. Fallback to promotion discount.
+        3. Default to regular price.
+        """
+        # 1. Product-specific inline discount
         if self.discount_active and self.discount_value:
             if self.discount_type == "percent":
                 return self.price - (self.price * (self.discount_value / Decimal('100')))
             elif self.discount_type == "fixed":
                 return max(self.price - self.discount_value, Decimal('0.00'))
+
+        # 2. Promotion-based discount
+        promo = self.get_active_promotion()
+        if promo:
+            promo_disc = Decimal(str(promo.discount))
+            # Handle fractional (0.2), percentage (20), or fixed (>100)
+            if promo_disc < Decimal("1"):
+                return self.price * (Decimal("1") - promo_disc)
+            if promo_disc <= Decimal("100"):
+                return self.price * (Decimal("1") - (promo_disc / Decimal("100")))
+            return max(self.price - promo_disc, Decimal("0.00"))
+
         return self.price
+    
+    @property
+    def is_currently_on_sale(self):
+        return self.discount_active or self.promotions.exists()
     
     @property
     def likes_count(self):

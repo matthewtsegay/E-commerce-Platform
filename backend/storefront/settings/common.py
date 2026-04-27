@@ -15,6 +15,8 @@ env = environ.Env(
 # Reading .env file
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+
 
 # Application definition
 

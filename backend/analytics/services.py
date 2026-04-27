@@ -54,15 +54,24 @@ def get_dashboard_stats():
     membership_labels = [membership_map.get(entry['membership'], 'Unknown') for entry in membership_dist]
     membership_values = [entry['count'] for entry in membership_dist]
 
-    # 5. Order Value Distribution
-    orders = Order.objects.prefetch_related('items').all()
-    ranges = {'$0-50': 0, '$50-100': 0, '$100-500': 0, '$500+': 0}
-    for order in orders:
-        val = order.total
-        if val <= 50: ranges['$0-50'] += 1
-        elif val <= 100: ranges['$50-100'] += 1
-        elif val <= 500: ranges['$100-500'] += 1
-        else: ranges['$500+'] += 1
+    # 5. Order Value Distribution (Optimized: Single DB query)
+    from django.db.models import Case, When, Value, IntegerField
+    
+    order_ranges = Order.objects.annotate(
+        total_val=Sum(F('items__unit_price') * F('items__quantity'))
+    ).aggregate(
+        range_0_50=Count(Case(When(total_val__lte=50, then=Value(1)), output_field=IntegerField())),
+        range_50_100=Count(Case(When(total_val__gt=50, total_val__lte=100, then=Value(1)), output_field=IntegerField())),
+        range_100_500=Count(Case(When(total_val__gt=100, total_val__lte=500, then=Value(1)), output_field=IntegerField())),
+        range_500_plus=Count(Case(When(total_val__gt=500, then=Value(1)), output_field=IntegerField())),
+    )
+    
+    ranges = {
+        '$0-50': order_ranges['range_0_50'],
+        '$50-100': order_ranges['range_50_100'],
+        '$100-500': order_ranges['range_100_500'],
+        '$500+': order_ranges['range_500_plus']
+    }
     
     # 6. Overall Statistics
     total_orders_count = Order.objects.count()

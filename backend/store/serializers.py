@@ -80,64 +80,35 @@ class ProductSerializer(serializers.ModelSerializer):
         """Apply 10% tax to the price."""
         return (obj.price * Decimal("1.1")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-    # -------------------- DISCOUNT HELPERS --------------------
-    def _get_first_promo(self, obj):
-        """
-        Use prefetched promotions if available.
-        Falls back to querying if not prefetched.
-        """
-        promos = getattr(obj, "_prefetched_promotions_cache", list(obj.promotions.all()))
-        return promos[0] if promos else None
-
     # -------------------- DISCOUNT FIELDS --------------------
-    def get_is_on_sale(self, obj):
-        return bool(getattr(obj, "discount_active", False) or self._get_first_promo(obj))
+    def get_is_on_sale(self, obj: Product):
+        return obj.is_currently_on_sale
 
-    def get_discount_active(self, obj):
-        return getattr(obj, "discount_active", False) or bool(self._get_first_promo(obj))
+    def get_discount_active(self, obj: Product):
+        return obj.discount_active or obj.get_active_promotion() is not None
 
-    def get_discount_type(self, obj):
-        if getattr(obj, "discount_active", False) and obj.discount_type:
+    def get_discount_type(self, obj: Product):
+        if obj.discount_active and obj.discount_type:
             return obj.discount_type
-        promo = self._get_first_promo(obj)
+        promo = obj.get_active_promotion()
         if not promo:
             return None
-        return "percent" if Decimal(promo.discount) < Decimal("1") else "fixed"
+        return "percent" if Decimal(str(promo.discount)) < Decimal("100") else "fixed"
 
-    def get_discount_value(self, obj):
-        if getattr(obj, "discount_active", False) and obj.discount_value is not None:
+    def get_discount_value(self, obj: Product):
+        if obj.discount_active and obj.discount_value is not None:
             return obj.discount_value
-        promo = self._get_first_promo(obj)
+        promo = obj.get_active_promotion()
         return getattr(promo, "discount", None) if promo else None
 
-    def get_discounted_price(self, obj):
-        """
-        Prefer inline product discount over promo discount.
-        Fallback: return regular price.
-        """
-        # Product-specific discount
-        if getattr(obj, "discount_active", False) and obj.discount_value:
-            return obj.get_discounted_price()
+    def get_discounted_price(self, obj: Product):
+        return obj.get_discounted_price().quantize(Decimal("0.01"), ROUND_HALF_UP)
 
-        promo = self._get_first_promo(obj)
-        if not promo:
-            return obj.price
-
-        promo_disc = Decimal(promo.discount)
-        if promo_disc < Decimal("1"):  # fractional discount (e.g., 0.2 = 20%)
-            return (obj.price * (Decimal("1") - promo_disc)).quantize(Decimal("0.01"), ROUND_HALF_UP)
-        if promo_disc <= Decimal("100"):  # percent discount (e.g., 20 = 20%)
-            return (obj.price * (Decimal("1") - (promo_disc / Decimal("100")))).quantize(Decimal("0.01"), ROUND_HALF_UP)
-        
-        # fixed discount (subtract directly)
-        discounted = obj.price - promo_disc
-        return max(discounted, Decimal("0.00")).quantize(Decimal("0.01"), ROUND_HALF_UP)
-
-    def get_discount_label(self, obj):
-        if getattr(obj, "discount_active", False) and obj.discount_label:
+    def get_discount_label(self, obj: Product):
+        if obj.discount_active and obj.discount_label:
             return obj.discount_label
-        promo = self._get_first_promo(obj)
-        return getattr(promo, "description", None)        
+        promo = obj.get_active_promotion()
+        return getattr(promo, "description", None)
         
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
@@ -288,8 +259,8 @@ class CreateOrderSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Request is required in serializer context")
             user = request.user
 
-            # Get customer linked to the logged-in user
-            customer, _ = Customer.objects.get_or_create(user=user)
+            # Get customer linked to the logged-in user (created via signal)
+            customer = Customer.objects.get(user=user)
 
             order = Order.objects.create(customer=customer)
             

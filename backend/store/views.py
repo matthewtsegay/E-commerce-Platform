@@ -1,4 +1,6 @@
 import requests
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Exists, OuterRef
 from django.conf import settings
@@ -83,6 +85,10 @@ class ProductViewSet(ModelViewSet):
     pagination_class = DefaultPagination
     filterset_class = ProductFilter
 
+    @method_decorator(cache_page(5 * 60))
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
     def get_queryset(self):
         user = self.request.user if self.request.user.is_authenticated else None
         queryset = (
@@ -158,18 +164,32 @@ class CartViewSet(CreateModelMixin,
                   DestroyModelMixin,
                   GenericViewSet):
     serializer_class = CartSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return Cart.objects.prefetch_related("items__product").filter(customer__user=self.request.user)
+        from django.db.models import Q
+        qs = Cart.objects.prefetch_related("items__product").all()
+        user = self.request.user
+        if user.is_staff:
+            return qs
+        if user.is_authenticated:
+            return qs.filter(Q(customer__user=user) | Q(customer__isnull=True))
+        return qs.filter(customer__isnull=True)
 
     def perform_create(self, serializer):
-        customer, _ = Customer.objects.get_or_create(user_id=self.request.user.id)
+        customer = None
+        if self.request.user.is_authenticated:
+            try:
+                customer = Customer.objects.get(user_id=self.request.user.id)
+            except Customer.DoesNotExist:
+                # Fallback if signal hasn't finished or manual creation failed
+                customer, _ = Customer.objects.get_or_create(user_id=self.request.user.id)
+        
         serializer.save(customer=customer)
 
 
 class CartItemViewSet(ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     http_method_names = ['get','post','patch','delete']
     
     def get_serializer_class(self):
@@ -182,10 +202,14 @@ class CartItemViewSet(ModelViewSet):
     
 
     def get_queryset(self):
-        return CartItem.objects \
-               .filter(cart_id=self.kwargs['cart_pk']) \
-               .filter(cart__customer__user=self.request.user) \
-               .select_related('product')
+        from django.db.models import Q
+        qs = CartItem.objects.filter(cart_id=self.kwargs['cart_pk']).select_related('product')
+        user = self.request.user
+        if user.is_staff:
+            return qs
+        if user.is_authenticated:
+            return qs.filter(Q(cart__customer__user=user) | Q(cart__customer__isnull=True))
+        return qs.filter(cart__customer__isnull=True)
     
     def get_serializer_context(self):
         return {"cart_id": self.kwargs["cart_pk"]}
@@ -338,6 +362,8 @@ class RecommendedProductsView(APIView):
         # Prefer products with most likes; fall back to arbitrary ordering.
         products = (
             Product.objects
+            .select_related('collection')
+            .prefetch_related('images', 'promotions')
             .annotate(total_likes=Count("likes", distinct=True))
             .order_by("-total_likes", "title")[:8]
         )

@@ -1,6 +1,6 @@
 from .common import *
 
-DEBUG = True
+DEBUG = env('DEBUG')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY', default='dev-insecure-key')
