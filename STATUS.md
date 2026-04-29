@@ -23,13 +23,8 @@
 ## 🔧 Tasks Left
 
 ### 🔴 Critical (Must Fix Before Going Live)
-<<<<<<< HEAD
-- [x] **Start PostgreSQL** on port 5433 — backend won't run without it
-- [x] **Analytics JWT support** — `/analytics/data/` uses session auth, not JWT; needs a DRF-compatible view added to backend
-=======
 - [x] **Start PostgreSQL** on port 5433 — backend now running on PostgreSQL
 - [x] **Analytics JWT support** — `/analytics/data/` view updated for JWT compatibility
->>>>>>> 67d20f3 (i update the some frontend parts the collection page,like icon,filtering page and product card and i add pre_deployment_analysis.md file)
 - [x] **Chapa payment** — gateway is integrated in backend but needs live API keys + end-to-end test
 - [x] **Product image upload** in admin UI — file input POSTing to `/store/products/{id}/images/`, image preview grid, delete image, 5MB limit
 

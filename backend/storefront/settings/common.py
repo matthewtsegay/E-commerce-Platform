@@ -30,12 +30,9 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'djoser',
     "corsheaders",
-    'silk',
     'django_filters',
-    'debug_toolbar',
     'drf_spectacular',
     'rest_framework',
-    'playground.apps.PlaygroundConfig',
     'store.apps.StoreConfig',
     'analytics.apps.AnalyticsConfig',
     'tags.apps.TagsConfig',
@@ -45,7 +42,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -58,7 +54,7 @@ MIDDLEWARE = [
 ]
 
 if env('DEBUG'):
-    MIDDLEWARE += ['silk.middleware.SilkyMiddleware']
+    pass
     
     
 INTERNAL_IPS = [
@@ -67,15 +63,14 @@ INTERNAL_IPS = [
     # ...
 ]
 
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    # Next picks 3001 when 3000 is already taken
     "http://localhost:3001",
     "http://127.0.0.1:3001",
-]
+])
 
 ROOT_URLCONF = 'storefront.urls'
 
@@ -156,8 +151,14 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ),
-    #     'PAGE_SIZE':10,
-    #     'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day'
+    }
 }
 
 SIMPLE_JWT = {
@@ -195,8 +196,7 @@ CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/1')
 CELERY_BEAT_SCHEDULE = {
     'notify_customers':{
         'task':'playground.tasks.notify_customers',
-        'schedule':5,
-        #crontab(day_of_week=1,hour=7,minute=30)
+        'schedule': crontab(hour=7, minute=30),
         'args':['hello world']
     }
 }
@@ -221,9 +221,11 @@ LOGGING = {
              'class':'logging.StreamHandler',
              },
          'file':{
-             'class':'logging.FileHandler',
-             'filename':'general.log',
-             'formatter':'verbose'
+             'class': 'logging.handlers.RotatingFileHandler',
+             'filename': 'general.log',
+             'maxBytes': 1024 * 1024 * 10, # 10 MB
+             'backupCount': 5,
+             'formatter': 'verbose'
          }
     },
     'loggers':{

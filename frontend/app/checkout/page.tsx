@@ -26,6 +26,8 @@ export default function CheckoutPage() {
   const user = useAuth((state) => state.user);
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('card');
+
 
   const items = cart?.items || [];
   const subtotal = items.reduce((sum, item) => sum + item.total_price, 0);
@@ -61,8 +63,25 @@ export default function CheckoutPage() {
 
       const orderRes = await api.post('/store/orders/', { cart_id: backendCartId });
       clearCart();
+
+      if (paymentMethod === 'chapa') {
+        try {
+          const payRes = await api.post('/store/payments/initiate/', {
+            order_id: orderRes.data.id,
+            return_url: window.location.origin + '/checkout/success'
+          });
+          window.location.href = payRes.data.checkout_url;
+          return;
+        } catch (err) {
+          toast.error('Payment initialization failed, but order was created.');
+          router.push(`/checkout/success?orderId=${orderRes.data.id}`);
+          return;
+        }
+      }
+
       toast.success('Order placed successfully!');
       router.push(`/checkout/success?orderId=${orderRes.data.id}`);
+
     } catch (error: any) {
       toast.error(getApiErrorMessage(error, 'Checkout failed. Please try again.'));
     } finally {
@@ -129,28 +148,41 @@ export default function CheckoutPage() {
                        <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-black">2</div>
                        <h2 className="text-3xl font-black uppercase tracking-tighter">Payment Method</h2>
                     </div>
-                    <RadioGroup defaultValue="card" className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                        <div>
                           <RadioGroupItem value="card" id="card" className="peer sr-only" />
                           <Label 
                             htmlFor="card" 
-                            className="flex flex-col items-center justify-between rounded-[24px] border-2 border-muted bg-popover p-6 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 [&:has([data-state=checked])]:border-primary transition-all cursor-pointer"
+                            className="flex flex-col items-center justify-between rounded-[24px] border-2 border-muted bg-popover p-6 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 [&:has([data-state=checked])]:border-primary transition-all cursor-pointer h-full"
                           >
                             <CreditCard className="mb-3 h-8 w-8 text-primary" />
-                            <span className="font-black uppercase tracking-widest text-xs">Credit Card</span>
+                            <span className="font-black uppercase tracking-widest text-[10px]">Credit Card</span>
+                          </Label>
+                       </div>
+                       <div>
+                          <RadioGroupItem value="chapa" id="chapa" className="peer sr-only" />
+                          <Label 
+                            htmlFor="chapa" 
+                            className="flex flex-col items-center justify-between rounded-[24px] border-2 border-muted bg-popover p-6 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 [&:has([data-state=checked])]:border-primary transition-all cursor-pointer h-full"
+                          >
+                            <div className="mb-3 h-8 flex items-center justify-center">
+                              <span className="text-xl font-black text-primary">CHAPA</span>
+                            </div>
+                            <span className="font-black uppercase tracking-widest text-[10px]">Chapa / Local</span>
                           </Label>
                        </div>
                        <div>
                           <RadioGroupItem value="paypal" id="paypal" className="peer sr-only" />
                           <Label 
                             htmlFor="paypal" 
-                            className="flex flex-col items-center justify-between rounded-[24px] border-2 border-muted bg-popover p-6 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 [&:has([data-state=checked])]:border-primary transition-all cursor-pointer"
+                            className="flex flex-col items-center justify-between rounded-[24px] border-2 border-muted bg-popover p-6 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 [&:has([data-state=checked])]:border-primary transition-all cursor-pointer h-full"
                           >
-                            <Image src="https://picsum.photos/seed/paypal/40/40" alt="PayPal" width={32} height={32} className="mb-3 grayscale group-hover:grayscale-0" referrerPolicy="no-referrer" />
-                            <span className="font-black uppercase tracking-widest text-xs">PayPal</span>
+                            <Image src="https://picsum.photos/seed/paypal/40/40" alt="PayPal" width={32} height={32} className="mb-3 grayscale" referrerPolicy="no-referrer" />
+                            <span className="font-black uppercase tracking-widest text-[10px]">PayPal</span>
                           </Label>
                        </div>
                     </RadioGroup>
+
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
                        <div className="space-y-3 md:col-span-2">

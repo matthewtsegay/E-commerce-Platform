@@ -10,8 +10,9 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Product } from '@/lib/types';
 import { motion } from 'motion/react';
-import { useCart } from '@/lib/store';
+import { useCartActions } from '@/hooks/use-cart-actions';
 import { toast } from 'sonner';
+
 import { api } from '@/lib/api-client';
 import { formatEtb } from '@/lib/format-currency';
 import { getEffectiveUnitPrice } from '@/lib/product-price';
@@ -21,17 +22,17 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const addItem = useCart((state) => state.addItem);
+  const { addToCart } = useCartActions();
   const router = useRouter();
   const [isLiked, setIsLiked] = useState(product.is_liked || false);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    addItem(product, 1);
-    toast.success('Added to cart');
+    await addToCart(product, 1);
   };
+
 
   const handleLikeToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -118,11 +119,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           </Link>
           
           <div className="flex items-center gap-1 mb-2">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="h-3 w-3 fill-primary text-primary" />
-            ))}
-            <span className="text-[10px] text-muted-foreground ml-1">(4.5)</span>
+            <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-widest">New Arrival</span>
           </div>
+
 
           <div className="mt-auto flex items-baseline gap-2">
             <span className="text-xl font-bold text-primary">

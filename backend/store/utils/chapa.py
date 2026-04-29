@@ -1,68 +1,94 @@
-# store/utils/chapa.py
-'''import requests
+import requests
+import uuid
+import logging
 from django.conf import settings
+from decimal import Decimal
 
-CHAPA_BASE = getattr(settings, "CHAPA_API_URL", "https://api.chapa.co/v1/transaction")
-INIT_URL = f"{CHAPA_BASE}/initialize"
-VERIFY_URL_BASE = f"{CHAPA_BASE}/verify" 
+logger = logging.getLogger(__name__)
 
-def get_chapa_headers():
-    secret = getattr(settings, "CHAPA_SECRET_KEY", None)
-    if not secret:
-        return None
-    return {"Authorization": f"Bearer {secret}", "Content-Type": "application/json"}
+def get_chapa_config():
+    """Retrieve Chapa configuration from settings with sensible defaults."""
+    return {
+        "SECRET_KEY": getattr(settings, "CHAPA_SECRET_KEY", "mock-secret-key"),
+        "BASE_URL": getattr(settings, "CHAPA_API_URL", "https://api.chapa.co/v1/transaction"),
+        "MOCK_MODE": getattr(settings, "CHAPA_MOCK_MODE", True),
+    }
 
-def initialize_chapa_payment(order, callback_url):
-    headers = get_chapa_headers()
-    if not headers:
-        return {"status": "error", "detail": "CHAPA_SECRET_KEY not configured"}
+def initialize_chapa_payment(order, return_url, callback_url=None):
+    """
+    Initializes a Chapa payment transaction.
+    If CHAPA_MOCK_MODE is True, returns a mock success response.
+    """
+    config = get_chapa_config()
+    tx_ref = f"order-{order.id}-{uuid.uuid4().hex[:8]}"
+    
+    amount = order.total
+    if isinstance(amount, Decimal):
+        amount = float(amount)
 
+    if config["MOCK_MODE"]:
+        logger.info(f"[MOCK CHAPA] Initializing payment for Order {order.id}, Ref: {tx_ref}")
+        return {
+            "status": "success",
+            "message": "Payment initialized (MOCKED)",
+            "data": {
+                "checkout_url": f"{return_url}?status=success&tx_ref={tx_ref}",
+                "tx_ref": tx_ref
+            }
+        }
+
+    # Real implementation
+    headers = {
+        "Authorization": f"Bearer {config['SECRET_KEY']}",
+        "Content-Type": "application/json"
+    }
+    
     payload = {
-        "amount": str(order.total),
+        "amount": str(amount),
         "currency": "ETB",
-        "email": getattr(order.customer.user, "email", ""),
-        "first_name": getattr(order.customer.user, "first_name", "") or "",
-        "last_name": getattr(order.customer.user, "last_name", "") or "",
-        "tx_ref": f"order-{order.id}-{int(order.placed_at.timestamp())}",  # unique
+        "email": order.customer.user.email,
+        "first_name": order.customer.user.first_name or "Customer",
+        "last_name": order.customer.user.last_name or "",
+        "tx_ref": tx_ref,
         "callback_url": callback_url,
-        "return_url": callback_url,
+        "return_url": return_url,
         "customization": {
-            "title": "Ecommerce Store",
-            "description": f"Payment for order #{order.id}"
-        },
-        "meta": {
-            "order_id": order.id,
-            "customer_id": order.customer.id
+            "title": "Nebi Store",
+            "description": f"Payment for Order #{order.id}"
         }
     }
 
     try:
-        resp = requests.post(INIT_URL, json=payload, headers=headers, timeout=10)
+        resp = requests.post(f"{config['BASE_URL']}/initialize", json=payload, headers=headers, timeout=15)
         resp.raise_for_status()
         return resp.json()
-    except requests.Timeout:
-        return {"status": "error", "detail": "Chapa request timed out"}
-    except requests.RequestException as e:
-        # Attempt to return JSON error if available
-        try:
-            return {"status": "error", "detail": resp.json()}
-        except Exception:
-            return {"status": "error", "detail": str(e)}
+    except Exception as e:
+        logger.error(f"Chapa Initialization Error: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 def verify_chapa_transaction(tx_ref):
-    headers = get_chapa_headers()
-    if not headers:
-        return {"status": "error", "detail": "CHAPA_SECRET_KEY not configured"}
+    """
+    Verifies a transaction with Chapa.
+    If CHAPA_MOCK_MODE is True, always returns success.
+    """
+    config = get_chapa_config()
 
-    url = f"{VERIFY_URL_BASE}/{tx_ref}"
+    if config["MOCK_MODE"]:
+        logger.info(f"[MOCK CHAPA] Verifying transaction Ref: {tx_ref}")
+        return {
+            "status": "success",
+            "data": {
+                "status": "success",
+                "amount": 100, # Mock value
+                "currency": "ETB"
+            }
+        }
+
+    headers = {"Authorization": f"Bearer {config['SECRET_KEY']}"}
     try:
-        resp = requests.get(url, headers=headers, timeout=10)
+        resp = requests.get(f"{config['BASE_URL']}/verify/{tx_ref}", headers=headers, timeout=15)
         resp.raise_for_status()
         return resp.json()
-    except requests.Timeout:
-        return {"status": "error", "detail": "Chapa verification timed out"}
-    except requests.RequestException as e:
-        try:
-            return {"status": "error", "detail": resp.json()}
-        except Exception:
-            return {"status": "error", "detail": str(e)}'''
+    except Exception as e:
+        logger.error(f"Chapa Verification Error: {str(e)}")
+        return {"status": "error", "message": str(e)}

@@ -51,7 +51,8 @@ from .serializers import (
     CustomerMeUpdateSerializer,
     OrderSerializer,
     CreateOrderSerializer,
-    UpdataOrderSerializer,
+    UpdateOrderSerializer,
+
     ProductImageSerializer,
     PromoBannerSerializer,
     PaymentMethodConfigSerializer,
@@ -59,6 +60,14 @@ from .serializers import (
 )
 from django.urls import reverse
 
+
+_product_content_type = None
+
+def get_product_content_type():
+    global _product_content_type
+    if _product_content_type is None:
+        _product_content_type = ContentType.objects.get_for_model(Product, for_concrete_model=False)
+    return _product_content_type
 
 class CollectionViewSet(ModelViewSet):
     queryset = Collection.objects.annotate(
@@ -87,6 +96,12 @@ class ProductViewSet(ModelViewSet):
 
     @method_decorator(cache_page(5 * 60))
     def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        limit = request.query_params.get('limit')
+        if limit and limit.isdigit():
+            queryset = queryset[:int(limit)]
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
         return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -104,7 +119,7 @@ class ProductViewSet(ModelViewSet):
                      LikedItem.objects.filter(
                         user=user,
                         object_id=OuterRef("pk"),
-                        content_type=ContentType.objects.get_for_model(Product),
+                        content_type=get_product_content_type(),
                     )
                 )
             )
@@ -256,7 +271,8 @@ class OrderViewSet(ModelViewSet):
         elif self.request.method == 'PATCH':
             if not self.request.user.is_staff:
                 return OrderSerializer
-            return UpdataOrderSerializer
+            return UpdateOrderSerializer
+
         return OrderSerializer
 
 
@@ -369,3 +385,54 @@ class RecommendedProductsView(APIView):
         )
         serializer = ProductSerializer(products, many=True, context={"request": request})
         return Response(serializer.data)
+from .utils.chapa import initialize_chapa_payment, verify_chapa_transaction
+
+class PaymentViewSet(GenericViewSet):
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['POST'])
+    def initiate(self, request):
+        order_id = request.data.get('order_id')
+        return_url = request.data.get('return_url')
+        
+        if not order_id:
+            return Response({"error": "order_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            order = Order.objects.get(id=order_id, customer__user=request.user)
+        except Order.DoesNotExist:
+            return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Create or get existing payment record
+        payment, created = Payment.objects.get_or_create(
+            order=order,
+            defaults={'amount': order.total}
+        )
+        
+        # Call Chapa Utility
+        res = initialize_chapa_payment(order, return_url)
+        
+        if res.get('status') == 'success':
+            payment.transaction_id = res['data']['tx_ref']
+            payment.save()
+            return Response(res['data'])
+        
+        return Response({"error": res.get('message', 'Failed to initialize payment')}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['POST'])
+    def verify(self, request):
+        tx_ref = request.data.get('tx_ref')
+        if not tx_ref:
+            return Response({"error": "tx_ref is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        res = verify_chapa_transaction(tx_ref)
+        
+        if res.get('status') == 'success':
+            try:
+                payment = Payment.objects.get(transaction_id=tx_ref)
+                payment.mark_success()
+                return Response({"status": "success", "message": "Payment verified"})
+            except Payment.DoesNotExist:
+                return Response({"error": "Payment record not found"}, status=status.HTTP_404_NOT_FOUND)
+                
+        return Response({"error": "Payment verification failed"}, status=status.HTTP_400_BAD_REQUEST)

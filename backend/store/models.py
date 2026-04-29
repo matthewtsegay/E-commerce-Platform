@@ -46,10 +46,10 @@ class Product(models.Model):
     collection = models.ForeignKey(Collection, on_delete=models.PROTECT, related_name='products')
     promotions = models.ManyToManyField(Promotion, blank=True)
     likes = GenericRelation("likes.LikedItem", related_query_name="liked_products")
-    is_on_sale = models.BooleanField(default=False)
+    is_on_sale = models.BooleanField(default=False, db_index=True)
     discount_type = models.CharField(max_length=10, choices=DISCOUNT_TYPE_CHOICES, null=True, blank=True)
     discount_value = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    discount_active = models.BooleanField(default=False)
+    discount_active = models.BooleanField(default=False, db_index=True)
     discount_label = models.CharField(max_length=50, null=True, blank=True)
 
     def get_active_promotion(self):
@@ -151,8 +151,11 @@ class Customer(models.Model):
         return self.user.last_name
     
     def update_membership(self):
-        # Sum all completed orders
-        total_spent = sum(order.total for order in self.order_set.filter(payment_status='C'))
+        # Sum all completed orders using database aggregation to avoid N+1 queries
+        agg = self.order_set.filter(payment_status='C').aggregate(
+            total_spent=Sum(F('items__unit_price') * F('items__quantity'))
+        )
+        total_spent = agg['total_spent'] or Decimal('0.00')
         if total_spent > 1000:
             self.membership = self.MEMBERSHIP_GOLD
         elif total_spent > 500:
@@ -264,7 +267,7 @@ class Review(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reviews', null=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField()
-    data = models.DateField(auto_now_add=True)
+    date = models.DateField(auto_now_add=True)
 
 
 class PromoBanner(models.Model):

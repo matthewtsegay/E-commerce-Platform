@@ -6,45 +6,33 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Product } from '@/lib/types';
-import { api } from '@/lib/api-client';
-import { extractList } from '@/lib/api-helpers';
+
 import { formatEtb } from '@/lib/format-currency';
 import { getEffectiveUnitPrice } from '@/lib/product-price';
 
 const SLIDE_INTERVAL_MS = 5500;
 
-export default function HeroProductSlides() {
-  const [products, setProducts] = useState<Product[]>([]);
+interface HeroProductSlidesProps {
+  products?: Product[];
+  loading?: boolean;
+}
+
+export default function HeroProductSlides({ 
+  products: initialProducts = [], 
+  loading: initialLoading = false 
+}: HeroProductSlidesProps) {
+  const [products, setProducts] = useState<Product[]>(initialProducts);
   const [index, setIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialLoading);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      setError(false);
-      try {
-        const response = await api.get('/store/products/');
-        const list = extractList<Product>(response.data).slice(0, 8);
-        if (!cancelled) {
-          setProducts(list);
-          setIndex(0);
-        }
-      } catch {
-        if (!cancelled) {
-          setProducts([]);
-          setError(true);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (initialProducts.length > 0) {
+      setProducts(initialProducts);
+      setLoading(false);
+    }
+  }, [initialProducts]);
+
 
   const go = useCallback(
     (delta: number) => {

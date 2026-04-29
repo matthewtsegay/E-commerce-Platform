@@ -6,8 +6,9 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import HeroProductSlides from './HeroProductSlides';
 import { motion } from 'motion/react';
+import { Product } from '@/lib/types';
 
-export default function Hero() {
+export default function Hero({ initialProducts = [] }: { initialProducts?: Product[] }) {
   return (
     <section className="relative overflow-hidden bg-background pt-16 md:pt-24 lg:pt-32">
       <div className="container mx-auto px-4">
@@ -65,7 +66,8 @@ export default function Hero() {
             className="relative"
           >
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-primary/30 blur-[120px] rounded-full -z-10 animate-pulse" />
-            <HeroProductSlides />
+            <HeroProductSlides products={initialProducts} />
+
           </motion.div>
         </div>
       </div>

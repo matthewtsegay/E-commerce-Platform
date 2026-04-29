@@ -69,6 +69,9 @@ class ProductSerializer(serializers.ModelSerializer):
 
     # -------------------- LIKE SYSTEM --------------------
     def get_is_liked(self, obj):
+        if "is_liked" in obj.__dict__:
+            return obj.__dict__["is_liked"]
+
         request = self.context.get("request")
         user = getattr(request, "user", None)
         logger.debug("get_is_liked debug — request=%r user=%r type(user)=%s", request, user, type(user))
@@ -113,7 +116,7 @@ class ProductSerializer(serializers.ModelSerializer):
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
-        fields = ['id','data','name','description']
+        fields = ['id','date','name','description']
         read_only_fields = ['name']
         
     def create(self, validated_data):
@@ -130,9 +133,15 @@ class ReviewSerializer(serializers.ModelSerializer):
     
     
 class SimpleProductSerializer(serializers.ModelSerializer):
+    unit_price = serializers.SerializerMethodField()
+    
+    def get_unit_price(self, obj):
+        from decimal import ROUND_HALF_UP, Decimal
+        return obj.get_discounted_price().quantize(Decimal("0.01"), ROUND_HALF_UP)
+        
     class Meta:
         model = Product
-        fields = ['id','title','price']
+        fields = ['id','title','price', 'unit_price']
         
         
 class CartItemSerializer(serializers.ModelSerializer):
@@ -143,7 +152,9 @@ class CartItemSerializer(serializers.ModelSerializer):
         fields = ['id','product','quantity','total_price']
     
     def get_total_price(self, cart_item: CartItem):
-        return cart_item.quantity * cart_item.product.price 
+        from decimal import ROUND_HALF_UP, Decimal
+        unit_price = cart_item.product.get_discounted_price().quantize(Decimal("0.01"), ROUND_HALF_UP)
+        return cart_item.quantity * unit_price 
         
             
 class CartSerializer(serializers.ModelSerializer):
@@ -152,7 +163,12 @@ class CartSerializer(serializers.ModelSerializer):
     total_price = serializers.SerializerMethodField()
     
     def get_total_price(self, cart):
-        return sum([item.quantity * item.product.price for item in cart.items.all()])
+        from decimal import ROUND_HALF_UP, Decimal
+        total = sum([
+            item.quantity * item.product.get_discounted_price().quantize(Decimal("0.01"), ROUND_HALF_UP)
+            for item in cart.items.all()
+        ])
+        return total
     class Meta:
         model = Cart
         fields = ['id','items','total_price']
@@ -225,11 +241,11 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = ['id', 'customer', 'placed_at', 'payment_status', 'items', 'total_price']
         
 
-class UpdataOrderSerializer(serializers.ModelSerializer):
+class UpdateOrderSerializer(serializers.ModelSerializer):
+
     class Meta:
         model =  Order
         fields = ['payment_status']
-        read_only_fields = ['payment_status']
 
 
 class CreateOrderSerializer(serializers.Serializer):

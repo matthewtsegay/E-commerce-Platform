@@ -33,53 +33,67 @@ function ProductsContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('newest');
-
-  const priceBounds = useMemo(() => {
-    if (!products.length) return { max: 20_000 };
-    const hi = Math.max(...products.map((p) => p.unit_price));
-    const max = Math.max(1_000, Math.ceil(hi / 500) * 500);
-    return { max };
-  }, [products]);
-
-  const [priceRange, setPriceRange] = useState([0, 20_000]);
+  const [isMounted, setIsMounted] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
-    setPriceRange((prev) => {
-      const upper = Math.min(prev[1], priceBounds.max);
-      const lower = Math.min(prev[0], upper);
-      return [lower, upper];
-    });
-  }, [priceBounds.max]);
+    setIsMounted(true);
+  }, []);
 
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
+  const priceBounds = useMemo(() => {
+    return { max: 50_000 };
+  }, []);
+
+  const [priceRange, setPriceRange] = useState([0, 50_000]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [collectionId, search, priceRange, sortBy]);
+
 
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const response = await api.get('/store/products/', {
-          params: { collection_id: collectionId || undefined }
-        });
-        setProducts(extractList(response.data));
+        const params: any = { 
+          collection_id: collectionId || undefined,
+          search: search || undefined,
+          price__gt: priceRange[0] > 0 ? priceRange[0] : undefined,
+          price__lt: priceRange[1] < priceBounds.max ? priceRange[1] : undefined,
+          page: page,
+        };
+
+        if (sortBy === 'price-low') params.ordering = 'price';
+        else if (sortBy === 'price-high') params.ordering = '-price';
+        else if (sortBy === 'newest') params.ordering = '-last_update';
+
+        const response = await api.get('/store/products/', { params });
+        const newProducts = extractList<Product>(response.data);
+        
+        if (page === 1) {
+          setProducts(newProducts);
+        } else {
+          setProducts(prev => [...prev, ...newProducts]);
+        }
+        
+        setHasMore(!!response.data.next);
       } catch (error: any) {
-        setProducts([]);
+        if (page === 1) setProducts([]);
         toast.error(getApiErrorMessage(error, 'Unable to load products right now.'));
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProducts();
-  }, [collectionId]);
+    const debounceId = setTimeout(fetchProducts, 500);
+    return () => clearTimeout(debounceId);
+  }, [collectionId, search, priceRange, sortBy, page, priceBounds.max]);
 
-  const filteredProducts = products.filter(p => 
-    p.title.toLowerCase().includes(search.toLowerCase()) &&
-    p.unit_price >= priceRange[0] && p.unit_price <= priceRange[1]
-  );
+
+  const filteredProducts = products; // Already filtered by backend
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -105,7 +119,8 @@ function ProductsContent() {
               />
             </div>
             
-            {mounted ? (
+            {isMounted ? (
+
               <Sheet>
                 <SheetTrigger
                   nativeButton={true}
@@ -187,12 +202,36 @@ function ProductsContent() {
             <p className="text-lg font-bold uppercase tracking-widest text-muted-foreground animate-pulse">Loading Catalog...</p>
           </div>
         ) : filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {filteredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+            
+            {hasMore && (
+              <div className="mt-16 flex justify-center">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="h-14 px-12 border-2 font-black text-lg rounded-2xl hover:bg-primary hover:text-primary-foreground transition-all"
+                  onClick={() => setPage(prev => prev + 1)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      LOADING...
+                    </>
+                  ) : (
+                    'LOAD MORE'
+                  )}
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
+
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="h-24 w-24 bg-muted rounded-full flex items-center justify-center mb-6">
               <X className="h-12 w-12 text-muted-foreground" />

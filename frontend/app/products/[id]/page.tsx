@@ -15,7 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
-import { useCart } from '@/lib/store';
+import { useCartActions } from '@/hooks/use-cart-actions';
+
 import { extractList, getApiErrorMessage } from '@/lib/api-helpers';
 import { formatEtb } from '@/lib/format-currency';
 import { getEffectiveUnitPrice } from '@/lib/product-price';
@@ -29,7 +30,7 @@ export default function ProductDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const addItem = useCart((state) => state.addItem);
+  const { addToCart } = useCartActions();
 
   // Review form state
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -61,11 +62,11 @@ export default function ProductDetailPage() {
     fetchProduct();
   }, [id]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) return;
-    addItem(product, quantity);
-    toast.success('Added to cart');
+    await addToCart(product, quantity);
   };
+
 
   const handleSubmitReview = async () => {
     if (!reviewName.trim()) { toast.error('Please enter your name.'); return; }
@@ -152,11 +153,12 @@ export default function ProductDetailPage() {
               </h1>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`h-4 w-4 ${i < 4 ? 'fill-primary text-primary' : 'text-muted'}`} />
-                  ))}
-                  <span className="text-sm font-bold ml-2">4.8 (85 Reviews)</span>
+                  <Star className={`h-4 w-4 ${reviews.length > 0 ? 'fill-primary text-primary' : 'text-muted'}`} />
+                  <span className="text-sm font-bold ml-2">
+                    {reviews.length > 0 ? `Rating based on ${reviews.length} review${reviews.length !== 1 ? 's' : ''}` : 'No reviews yet'}
+                  </span>
                 </div>
+
                 <Separator orientation="vertical" className="h-4" />
                 <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">SKU: NB-2026-X1</span>
               </div>

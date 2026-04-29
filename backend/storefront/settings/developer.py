@@ -23,3 +23,14 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
     }
 }
+
+INSTALLED_APPS += [
+    'silk',
+    'debug_toolbar',
+    'playground.apps.PlaygroundConfig',
+]
+
+MIDDLEWARE += [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'silk.middleware.SilkyMiddleware',
+]

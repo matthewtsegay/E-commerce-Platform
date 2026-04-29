@@ -1,32 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Product } from '@/lib/types';
 import ProductCard from '../products/ProductCard';
 import { motion } from 'motion/react';
-import { api } from '@/lib/api-client';
-import { extractList } from '@/lib/api-helpers';
 
-export default function FeaturedProducts() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchFeatured = async () => {
-      try {
-        const response = await api.get('/store/products/?is_on_sale=true&limit=4');
-        setProducts(extractList(response.data));
-      } catch {
-        setProducts([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchFeatured();
-  }, []);
+interface FeaturedProductsProps {
+  products?: Product[];
+  isLoading?: boolean;
+}
+
+export default function FeaturedProducts({ 
+  products: initialProducts = [], 
+  isLoading = false 
+}: FeaturedProductsProps) {
+  const products = initialProducts;
+
   return (
     <section className="py-24 bg-cream/30">
       <div className="container mx-auto px-4">

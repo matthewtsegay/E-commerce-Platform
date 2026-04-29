@@ -7,13 +7,41 @@ import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Package, ArrowRight, Home } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { api } from '@/lib/api-client';
+import { toast } from 'sonner';
 
 export default function SuccessPage() {
-  const orderId = useMemo(() => {
-    if (typeof window === 'undefined') return null;
-    return new URLSearchParams(window.location.search).get('orderId');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'failed'>('pending');
+
+  const { orderId, txRef } = useMemo(() => {
+    if (typeof window === 'undefined') return { orderId: null, txRef: null };
+    const params = new URLSearchParams(window.location.search);
+    return {
+      orderId: params.get('orderId'),
+      txRef: params.get('tx_ref')
+    };
   }, []);
+
+  useEffect(() => {
+    if (txRef) {
+      const verifyPayment = async () => {
+        setIsVerifying(true);
+        try {
+          await api.post('/store/payments/verify/', { tx_ref: txRef });
+          setPaymentStatus('success');
+          toast.success('Payment verified successfully!');
+        } catch (error) {
+          setPaymentStatus('failed');
+          toast.error('Payment verification failed.');
+        } finally {
+          setIsVerifying(false);
+        }
+      };
+      verifyPayment();
+    }
+  }, [txRef]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -52,8 +80,16 @@ export default function SuccessPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Status</span>
-              <span className="text-sm font-black uppercase italic">Processing</span>
+              <span className={`text-sm font-black uppercase italic ${
+                paymentStatus === 'success' ? 'text-green-600' : 
+                paymentStatus === 'failed' ? 'text-red-600' : 'text-primary'
+              }`}>
+                {isVerifying ? 'Verifying...' : 
+                 paymentStatus === 'success' ? 'Paid & Verified' :
+                 paymentStatus === 'failed' ? 'Verification Failed' : 'Processing'}
+              </span>
             </div>
+
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">

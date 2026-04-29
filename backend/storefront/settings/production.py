@@ -14,3 +14,13 @@ DATABASES = {
 # Ensure connection pooling is active
 DATABASES['default']['CONN_MAX_AGE'] = 600
 DATABASES['default']['CONN_HEALTH_CHECKS'] = True
+
+# Security settings
+SECURE_HSTS_SECONDS = 31536000 # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)

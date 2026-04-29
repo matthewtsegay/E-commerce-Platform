@@ -34,6 +34,7 @@ interface CartState {
   addItem: (product: Product, quantity: number) => void;
   removeItem: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
+  setCartId: (id: string) => void;
   clearCart: () => void;
 }
 
@@ -42,6 +43,15 @@ export const useCart = create<CartState>()(
     (set, get) => ({
       cart: null,
       setCart: (cart) => set({ cart }),
+      setCartId: (id) => {
+        const current = get().cart;
+        if (current) {
+          set({ cart: { ...current, id } });
+        } else {
+          set({ cart: { id, items: [], total_price: 0 } });
+        }
+      },
+
       addItem: (product, quantity) => {
         const currentCart = get().cart;
         const items = currentCart ? [...currentCart.items] : [];
@@ -54,7 +64,8 @@ export const useCart = create<CartState>()(
           items[existingItemIndex].total_price = items[existingItemIndex].quantity * unit;
         } else {
           items.push({
-            id: Math.random(), // In real app, cart items are managed by backend
+            id: Date.now(), // Temporary local ID
+
             product,
             quantity,
             total_price: quantity * unit,
@@ -62,8 +73,9 @@ export const useCart = create<CartState>()(
         }
 
         const total_price = items.reduce((acc, item) => acc + item.total_price, 0);
-        set({ cart: { id: currentCart?.id || 'temp-id', items, total_price } });
+        set({ cart: { id: currentCart?.id || '', items, total_price } });
       },
+
       removeItem: (productId) => {
         const currentCart = get().cart;
         if (!currentCart) return;

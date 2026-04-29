@@ -3,3 +3,5 @@
 /media/
 /static/
 general.log
+*.sqlite3
+celerybeat-schedule*
