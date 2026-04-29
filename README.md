@@ -299,6 +299,43 @@ pipenv run pytest tests/e2e/
 pipenv run pytest --cov=store --cov=core --cov=analytics
 ```
 
+## 🏎️ Performance Testing (Locust) & Background Tasks
+
+### 1. Redis (Message Broker)
+Celery requires Redis to handle background queues (like sending emails).
+```bash
+# Using Docker (Recommended)
+docker run -d -p 6379:6379 redis
+
+# Or use a native Redis installation on your OS/WSL
+```
+
+### 2. Celery Worker (Background Tasks)
+Start the Celery worker to process background jobs like order confirmation emails:
+```bash
+cd backend
+# On Windows, using eventlet pool is recommended
+pipenv run celery -A storefront worker -l info -P eventlet
+```
+
+### 3. SMTP Configuration (Emails)
+Add the following variables to your backend `.env` file to enable real email sending (e.g., Gmail):
+```env
+EMAIL_HOST=smtp.gmail.com
+EMAIL_HOST_USER=your_email@gmail.com
+EMAIL_HOST_PASSWORD=your_app_password
+EMAIL_PORT=587
+```
+
+### 4. Load Testing with Locust
+Run load tests to check the platform's performance and concurrent user capacity:
+```bash
+cd backend
+# Start Locust
+pipenv run locust -f locustfiles/browes_products.py
+```
+Open `http://localhost:8089` in your browser, enter the number of concurrent users and spawn rate, and start swarming!
+
 ## 🎯 Performance Optimizations
 
 - **Code Splitting**: Lazy-loaded route components

@@ -36,6 +36,7 @@ pytest-django = "*"
 pytest-watch = "*"
 pytest = "*"
 locust = "*"
+aiosmtpd = "*"
 
 [requires]
 python_version = "3.13"

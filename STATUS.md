@@ -1,15 +1,35 @@
 # Nebi Store — Status & Roadmap
 
 ## ✅ Completed
-All core features, admin suite, validation, and API integration are done.
+- All core features, admin suite, validation, and API integration.
+- **Analytics Dashboard UI**: Modern blue theme, icons, and layout improvements.
+- **Django Admin Fixes**: Audited `format_html` calls for security and stability.
+
+---
+
+## 🕒 Recent Updates
+- Updated the **Analytics Dashboard** (UI, Icons, and Theme)
+- **Database Solidified** (PostgreSQL migration and optimization)
+- **Performance Optimized** (Django Debug Toolbar disabled for load tests, Locust scripts made dynamic)
+- **Background Tasks Setup** (Redis and Celery configured for asynchronous email processing)
+- **Frontend Store Updates**:
+  - Implemented **Collection pages** displaying dedicated products for specific collections.
+  - Added **Like/Favorite button** functionality to products.
+  - Upgraded the **UI of the filtering sidebar** for better user experience.
+  - Enhanced **Product Cards** to be clickable, routing to full product description/info pages.
 
 ---
 
 ## 🔧 Tasks Left
 
 ### 🔴 Critical (Must Fix Before Going Live)
+<<<<<<< HEAD
 - [x] **Start PostgreSQL** on port 5433 — backend won't run without it
 - [x] **Analytics JWT support** — `/analytics/data/` uses session auth, not JWT; needs a DRF-compatible view added to backend
+=======
+- [x] **Start PostgreSQL** on port 5433 — backend now running on PostgreSQL
+- [x] **Analytics JWT support** — `/analytics/data/` view updated for JWT compatibility
+>>>>>>> 67d20f3 (i update the some frontend parts the collection page,like icon,filtering page and product card and i add pre_deployment_analysis.md file)
 - [x] **Chapa payment** — gateway is integrated in backend but needs live API keys + end-to-end test
 - [x] **Product image upload** in admin UI — file input POSTing to `/store/products/{id}/images/`, image preview grid, delete image, 5MB limit
 
@@ -17,14 +37,14 @@ All core features, admin suite, validation, and API integration are done.
 - [ ] **Deploy backend** to a live server (Railway / Render / VPS) with PostgreSQL
 - [ ] **Deploy frontend** to Vercel and set `NEXT_PUBLIC_API_URL` to production backend URL
 - [x] **Customer name display** in Orders admin — cross-references `/store/customers/` and `/auth/users/{id}/` to show real names
-- [ ] **Forgot password** page — route exists but flow needs backend email config (SMTP)
 - [x] **Review submission** form in product detail page — inline form with name + description POSTs to `/store/products/{id}/reviews/`
 
 ### 🟢 Nice to Have (Increases Sale Value)
 - [ ] **Mobile testing** — verify all admin pages on small screens
 - [ ] **Playwright E2E tests** — automate register → login → buy flow
 - [ ] **Product search** in storefront — wire the search bar to `GET /store/products/?search=`
-- [ ] **Order confirmation email** — backend signal exists, needs SMTP config
+- [x] **Order confirmation email** — backend signal connected to Celery, just needs `.env` SMTP config
+- [x] **Forgot password** page — backend ready via Djoser + Celery, just needs `.env` SMTP config
 - [ ] **Admin: bulk actions** — bulk delete products, bulk status update orders
 
 ---

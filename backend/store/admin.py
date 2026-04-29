@@ -1,5 +1,6 @@
+
 from django.contrib import admin, messages
-#from django.contrib.contenttypes.admin import GenericTabularInline
+from django.contrib.contenttypes.admin import GenericTabularInline
 from django.contrib.contenttypes.admin import GenericTabularInline
 from django.db.models import Count, Exists, OuterRef
 from django.contrib.contenttypes.models import ContentType
@@ -8,6 +9,7 @@ from django.db import models
 from django.db.models.aggregates import Count
 from django.urls import reverse
 from django.utils.html import format_html,urlencode
+from django.utils.safestring import mark_safe # Add this to your imports
 from .models import Collection,Product,Customer,Order,OrderItem,Address,ProductImage
 
 
@@ -55,9 +57,14 @@ class ProductImageInline(admin.TabularInline):
     extra = 0
     
     def thumbnail(self, instance):
-        if instance.image.name != '':
-            return format_html('<img src="{}" class="thumbnail"/>', instance.image.url)
-        return ''
+        # 1. Safer check: 'if instance.image:' checks if the file exists 
+        # and prevents errors if the name is None.
+        if instance.image:
+            return format_html('<img src="{}" class="thumbnail" style="width: 50px; height: auto;"/>', instance.image.url)
+        
+        # 2. Fix for Django 6.0+: Return a SafeString version of an empty string
+        # This prevents the "args or kwargs" error.
+        return mark_safe('')
 
 
 @admin.register(Product)

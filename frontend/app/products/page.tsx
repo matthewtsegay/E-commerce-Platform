@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/products/ProductCard';
@@ -24,7 +25,10 @@ import { formatEtb } from '@/lib/format-currency';
 
 import { useSyncExternalStore } from 'react';
 
-export default function ProductsPage() {
+function ProductsContent() {
+  const searchParams = useSearchParams();
+  const collectionId = searchParams.get('collection_id');
+
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -57,7 +61,9 @@ export default function ProductsPage() {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const response = await api.get('/store/products/');
+        const response = await api.get('/store/products/', {
+          params: { collection_id: collectionId || undefined }
+        });
         setProducts(extractList(response.data));
       } catch (error: any) {
         setProducts([]);
@@ -68,7 +74,7 @@ export default function ProductsPage() {
     };
 
     fetchProducts();
-  }, []);
+  }, [collectionId]);
 
   const filteredProducts = products.filter(p => 
     p.title.toLowerCase().includes(search.toLowerCase()) &&
@@ -109,48 +115,59 @@ export default function ProductsPage() {
                     </Button>
                   }
                 />
-                <SheetContent>
-                  <SheetHeader>
-                    <SheetTitle className="text-2xl font-black uppercase tracking-tighter">Filters</SheetTitle>
+                <SheetContent className="w-full sm:max-w-md p-6 md:p-8 flex flex-col h-full overflow-y-auto">
+                  <SheetHeader className="pb-6 border-b">
+                    <SheetTitle className="text-3xl font-black uppercase tracking-tighter">Filters</SheetTitle>
                   </SheetHeader>
-                  <div className="mt-8 space-y-8">
-                    <div>
-                      <h4 className="font-bold mb-4 uppercase text-sm tracking-widest text-primary">Price Range</h4>
-                      <Slider 
-                        max={priceBounds.max} 
-                        step={50} 
-                        value={priceRange}
-                        onValueChange={(value) => {
-                          if (Array.isArray(value)) setPriceRange([...value]);
-                        }}
-                        className="mb-4"
-                      />
-                      <div className="flex justify-between text-sm font-bold">
+                  <div className="flex-1 py-6 space-y-10">
+                    <div className="space-y-6">
+                      <h4 className="font-bold uppercase text-sm tracking-widest text-primary flex items-center justify-between">
+                        Price Range
+                      </h4>
+                      <div className="px-2">
+                        <Slider 
+                          max={priceBounds.max} 
+                          step={50} 
+                          value={priceRange}
+                          onValueChange={(value) => {
+                            if (Array.isArray(value)) setPriceRange([...value]);
+                          }}
+                          className="py-2"
+                        />
+                      </div>
+                      <div className="flex justify-between items-center text-sm font-bold bg-muted/40 p-4 rounded-xl border border-muted">
                         <span>{formatEtb(priceRange[0])}</span>
+                        <div className="h-px w-8 bg-muted-foreground/30 mx-4" />
                         <span>{formatEtb(priceRange[1])}</span>
                       </div>
                     </div>
 
-                    <div>
-                      <h4 className="font-bold mb-4 uppercase text-sm tracking-widest text-primary">Sort By</h4>
+                    <div className="space-y-4">
+                      <h4 className="font-bold uppercase text-sm tracking-widest text-primary">Sort By</h4>
                       <Select value={sortBy} onValueChange={(value) => setSortBy(value || 'newest')}>
-                        <SelectTrigger className="w-full h-12 border-2 font-bold">
+                        <SelectTrigger className="w-full h-14 border-2 font-bold rounded-xl focus:ring-primary focus:border-primary bg-white">
                           <SelectValue placeholder="Sort by" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="newest" className="font-bold">Newest First</SelectItem>
-                          <SelectItem value="price-low" className="font-bold">Price: Low to High</SelectItem>
-                          <SelectItem value="price-high" className="font-bold">Price: High to Low</SelectItem>
-                          <SelectItem value="popular" className="font-bold">Most Popular</SelectItem>
+                        <SelectContent className="rounded-xl border-2 shadow-xl">
+                          <SelectItem value="newest" className="font-bold py-3 cursor-pointer">Newest First</SelectItem>
+                          <SelectItem value="price-low" className="font-bold py-3 cursor-pointer">Price: Low to High</SelectItem>
+                          <SelectItem value="price-high" className="font-bold py-3 cursor-pointer">Price: High to Low</SelectItem>
+                          <SelectItem value="popular" className="font-bold py-3 cursor-pointer">Most Popular</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
 
-                    <Button className="w-full h-14 font-black text-lg shadow-xl" onClick={() => {
-                      setSearch('');
-                      setPriceRange([0, 500]);
-                      setSortBy('newest');
-                    }}>
+                  <div className="pt-6 mt-auto border-t">
+                    <Button 
+                      variant="default"
+                      className="w-full h-14 font-black text-lg rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]" 
+                      onClick={() => {
+                        setSearch('');
+                        setPriceRange([0, priceBounds.max]);
+                        setSortBy('newest');
+                      }}
+                    >
                       RESET ALL
                     </Button>
                   </div>
@@ -188,5 +205,24 @@ export default function ProductsPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-grow container mx-auto px-4 py-12 flex items-center justify-center">
+          <div className="flex flex-col items-center justify-center">
+            <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+            <p className="text-lg font-bold uppercase tracking-widest text-muted-foreground animate-pulse">Loading Catalog...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
   );
 }

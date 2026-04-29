@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Heart, ShoppingCart, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import { Product } from '@/lib/types';
 import { motion } from 'motion/react';
 import { useCart } from '@/lib/store';
 import { toast } from 'sonner';
+import { api } from '@/lib/api-client';
 import { formatEtb } from '@/lib/format-currency';
 import { getEffectiveUnitPrice } from '@/lib/product-price';
 
@@ -20,10 +22,45 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const addItem = useCart((state) => state.addItem);
+  const router = useRouter();
+  const [isLiked, setIsLiked] = useState(product.is_liked || false);
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     addItem(product, 1);
     toast.success('Added to cart');
+  };
+
+  const handleLikeToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isLikeLoading) return;
+    
+    // Optimistic update
+    setIsLiked(!isLiked);
+    setIsLikeLoading(true);
+    
+    try {
+      const response = await api.post(`/store/products/${product.id}/likes/`);
+      setIsLiked(response.data.liked);
+    } catch (error: any) {
+      // Revert on error
+      setIsLiked(isLiked);
+      if (error.response?.status === 401) {
+        toast.error('Please log in to like products');
+      } else {
+        toast.error('Failed to update like status');
+      }
+    } finally {
+      setIsLikeLoading(false);
+    }
+  };
+
+  const navigateToProduct = () => {
+    router.push(`/products/${product.id}`);
   };
 
   return (
@@ -33,7 +70,10 @@ export default function ProductCard({ product }: ProductCardProps) {
       transition={{ duration: 0.4 }}
       whileHover={{ y: -5 }}
     >
-      <Card className="overflow-hidden h-full flex flex-col border-none shadow-lg bg-white/50 backdrop-blur-sm group">
+      <Card 
+        className="overflow-hidden h-full flex flex-col border-none shadow-lg bg-white/50 backdrop-blur-sm group cursor-pointer transition-all hover:shadow-xl"
+        onClick={navigateToProduct}
+      >
         <div className="relative aspect-square overflow-hidden bg-cream">
           {product.images?.[0] ? (
             <Image
@@ -58,9 +98,10 @@ export default function ProductCard({ product }: ProductCardProps) {
           <Button
             variant="ghost"
             size="icon"
+            onClick={handleLikeToggle}
             className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/80 hover:bg-white text-foreground shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
           >
-            <Heart className={`h-4 w-4 ${product.is_liked ? 'fill-destructive text-destructive' : ''}`} />
+            <Heart className={`h-4 w-4 ${isLiked ? 'fill-destructive text-destructive' : ''}`} />
           </Button>
         </div>
 
@@ -68,7 +109,11 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div className="text-xs text-muted-foreground mb-1 font-medium tracking-wider uppercase">
             {typeof product.collection === 'object' && product.collection ? product.collection.title : ''}
           </div>
-          <Link href={`/products/${product.id}`} className="hover:text-primary transition-colors">
+          <Link 
+            href={`/products/${product.id}`} 
+            className="hover:text-primary transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="font-bold text-lg leading-tight mb-2 line-clamp-2">{product.title}</h3>
           </Link>
           
@@ -92,7 +137,10 @@ export default function ProductCard({ product }: ProductCardProps) {
         </CardContent>
 
         <CardFooter className="p-4 pt-0">
-          <Button className="w-full gap-2 font-semibold shadow-md active:scale-95 transition-transform" onClick={handleAddToCart}>
+          <Button 
+            className="w-full gap-2 font-semibold shadow-md active:scale-95 transition-transform" 
+            onClick={handleAddToCart}
+          >
             <ShoppingCart className="h-4 w-4" />
             Add to Cart
           </Button>

@@ -13,3 +13,13 @@ DATABASES = {
 # Add connection pooling for consistency with production if desired
 DATABASES['default']['CONN_MAX_AGE'] = 600
 DATABASES['default']['CONN_HEALTH_CHECKS'] = True
+
+# ---------------------------------------------------------------------------
+# Cache – use in-process memory cache so Redis is NOT required locally.
+# Remove this block (or set REDIS_URL) if you start Redis for local dev.
+# ---------------------------------------------------------------------------
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    }
+}
