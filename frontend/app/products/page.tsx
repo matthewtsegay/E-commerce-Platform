@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/products/ProductCard';
@@ -27,7 +27,9 @@ import { useSyncExternalStore } from 'react';
 
 function ProductsContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const collectionId = searchParams.get('collection_id');
+  const urlSearch = searchParams.get('search') || '';
 
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,6 +48,10 @@ function ProductsContent() {
   }, []);
 
   const [priceRange, setPriceRange] = useState([0, 50_000]);
+
+  useEffect(() => {
+    setSearch(urlSearch);
+  }, [urlSearch]);
 
   // Reset page when filters change
   useEffect(() => {
@@ -109,7 +115,14 @@ function ProductsContent() {
           </div>
 
           <div className="flex w-full md:w-auto items-center gap-2">
-            <div className="relative flex-grow md:w-80">
+            <form onSubmit={(event) => {
+              event.preventDefault();
+              if (search.trim()) {
+                router.push(`/products?search=${encodeURIComponent(search.trim())}`);
+                return;
+              }
+              router.push('/products');
+            }} className="relative flex-grow md:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
                 placeholder="Search products..." 
@@ -117,7 +130,8 @@ function ProductsContent() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
-            </div>
+              <button type="submit" className="sr-only">Search</button>
+            </form>
             
             {isMounted ? (
 

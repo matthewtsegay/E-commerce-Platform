@@ -18,13 +18,16 @@ A full-stack e-commerce application built with a Django REST Framework backend a
 
 ### Frontend (Next.js/TypeScript)
 - **Modern Tech Stack**: Next.js 15 + React 19 + TypeScript + Tailwind CSS
+- **Server Components**: Homepage uses Next.js Server Components for optimal performance
+- **Real-time Product Data**: Hero section, featured, latest, and trending products from backend APIs
 - **Responsive Design**: Mobile-first approach with seamless desktop experience
 - **Product Management**: Browse, search, filter, and view detailed product pages
-- **Shopping Cart**: Add/remove items, update quantities, persistent cart storage
-- **Checkout Process**: Complete order flow with form validation
-- **Real API Integration**: Connected to Django backend (no mock data)
+- **Shopping Cart**: Add/remove items, update quantities, persistent cart storage with backend sync
+- **Checkout Process**: Complete order flow with form validation and payment integration
+- **Real API Integration**: Connected to Django backend (no mock data, all sections use live endpoints)
+- **State Management**: Zustand with persistence for cart and auth state
 - **Accessibility**: WCAG compliant with keyboard navigation and screen reader support
-- **Performance**: Lazy loading, optimized images, and efficient state management
+- **Performance**: Server-side data fetching, Suspense boundaries, lazy loading, optimized images
 
 ## 🎨 Design System
 
@@ -144,25 +147,40 @@ npm run dev
 # Server will run on http://localhost:3000
 ```
 
-## 🔧 Configuration
+## 📦 Frontend Deployment (Vercel)
 
-### Environment Variables
+### Prerequisites
+- GitHub repository synced with the latest code.
+- Vercel account (free tier works fine).
 
-#### Backend (.env)
-```env
-# Database Configuration
-DATABASE_URL=postgresql://postgres:password@localhost:5433/ecommerce_db
+### Steps
+1. **Push latest changes**  
+   ```bash
+   git add .
+   git commit -m "Prepare frontend for Vercel deployment"
+   git push origin main
+   ```
 
-# Django Settings
-SECRET_KEY=your-django-secret-key
-DEBUG=True
-```
+2. **Import project to Vercel**  
+   - Go to <https://vercel.com/dashboard>.
+   - Click **New Project** → **Import Git Repository** → select your GitHub repo.
+   - Vercel auto-detects a Next.js project.
 
-#### Frontend (.env)
-```env
-# API Configuration
-NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
-```
+3. **Configure Environment Variables**  
+   - In the Vercel dashboard, navigate to **Project Settings → Environment Variables**.
+   - Add `NEXT_PUBLIC_API_URL` pointing to your production backend API (e.g., `https://api.nebistore.com`).
+
+4. **Deploy**  
+   - Click **Deploy**. Vercel will run `npm install` and `npm run build`.
+   - After a successful build, your site will be live at `https://<project-name>.vercel.app`.
+
+### Post‑Deployment Checklist
+- Verify homepage loads with real product data.
+- Test cart persistence, login, checkout flow.
+- Ensure all API calls hit the production backend (check network requests).
+- Confirm responsive design on mobile devices.
+
+For more detailed instructions, see `frontend/VERCEL_DEPLOYMENT.md`.
 
 ### Database Setup
 The application uses PostgreSQL running locally on port 5433. Ensure PostgreSQL is installed and running before starting the application.
@@ -353,10 +371,46 @@ Open `http://localhost:8089` in your browser, enter the number of concurrent use
 4. Collect static files
 5. Configure production settings
 
-### Frontend Deployment
-1. Build optimized bundle: `npm run build`
-2. Deploy to static hosting (Vercel, Netlify, etc.)
-3. Configure environment variables for production API
+### Frontend Deployment (Vercel)
+
+**Prerequisites:**
+- GitHub account with repository pushed
+- Vercel account (free tier available)
+
+**Steps:**
+
+1. **Push to GitHub**
+```bash
+git add .
+git commit -m "refactor: modernize homepage with server components and API integration"
+git push origin main
+```
+
+2. **Connect to Vercel**
+   - Go to [vercel.com](https://vercel.com)
+   - Click "New Project"
+   - Select your GitHub repository
+   - Vercel auto-detects Next.js project
+
+3. **Configure Environment Variables**
+   - In Vercel dashboard, go to Project Settings → Environment Variables
+   - Add: `NEXT_PUBLIC_API_URL=https://your-backend-url/api/v1`
+   - Example: `NEXT_PUBLIC_API_URL=https://api.nebistore.com/api/v1`
+
+4. **Deploy**
+   - Click "Deploy"
+   - Vercel automatically builds and deploys
+   - Your site is live at `your-project.vercel.app`
+
+**Post-Deployment Checklist:**
+- [ ] Homepage loads correctly with products
+- [ ] Product links work and fetch data
+- [ ] Cart persists across page reloads
+- [ ] Login/Register flow works
+- [ ] Checkout process completes
+- [ ] No TypeScript build errors
+- [ ] No console errors in DevTools
+- [ ] Mobile responsive design verified
 
 ## 🔍 Browser Support
 

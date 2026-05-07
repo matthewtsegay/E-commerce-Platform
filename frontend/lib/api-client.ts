@@ -50,3 +50,17 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+/**
+ * Search products by query string.
+ * @param searchQuery - The search term to query products.
+ * @returns Promise resolving to the list of matching products.
+ */
+export const searchProducts = async (searchQuery: string) => {
+  if (!searchQuery) {
+    throw new Error('Search query cannot be empty');
+  }
+  const encoded = encodeURIComponent(searchQuery);
+  const response = await api.get(`/store/products/?search=${encoded}`);
+  return response.data;
+};
