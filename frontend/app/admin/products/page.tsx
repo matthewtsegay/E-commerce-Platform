@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer';
 import AdminShell from '@/components/admin/AdminShell';
 import { useAuth } from '@/lib/store';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { api } from '@/lib/api-client';
 import { Product, Collection } from '@/lib/types';
 import { extractList, getApiErrorMessage } from '@/lib/api-helpers';
@@ -101,7 +102,7 @@ function ImageUploadPanel({ productId, images, onUploaded }: {
         <div className="flex flex-wrap gap-3">
           {images.map((img) => (
             <div key={img.id} className="relative group w-20 h-20 rounded-xl overflow-hidden border-2 border-muted">
-              <img src={img.image} alt="product" className="w-full h-full object-cover" />
+              <Image src={img.image} alt="product" fill className="object-cover" />
               <button
                 onClick={() => handleDeleteImage(img.id)}
                 className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -489,7 +490,9 @@ export default function AdminProductsPage() {
                             <div className="flex items-center gap-3">
                               <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
                                 {p.images?.[0]?.image ? (
-                                  <img src={p.images[0].image} alt={p.title} className="h-10 w-10 rounded-xl object-cover" />
+                                  <div className="relative h-10 w-10 overflow-hidden rounded-xl">
+                                    <Image src={p.images[0].image} alt={p.title} fill className="object-cover" />
+                                  </div>
                                 ) : (
                                   <ImagePlus className="h-4 w-4 text-primary/40" />
                                 )}

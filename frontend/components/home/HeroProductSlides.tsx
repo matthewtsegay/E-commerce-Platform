@@ -50,7 +50,7 @@ export default function HeroProductSlides({
 
   if (loading) {
     return (
-      <div className="flex h-[400px] md:h-[560px] w-full items-center justify-center rounded-[32px] border bg-white/50">
+      <div className="flex h-[600px] md:h-[800px] w-full items-center justify-center rounded-[32px] border bg-white/50">
         <Loader2 className="h-10 w-10 animate-spin text-primary" aria-hidden />
         <span className="sr-only">Loading featured products</span>
       </div>
@@ -59,7 +59,7 @@ export default function HeroProductSlides({
 
   if (error || products.length === 0) {
     return (
-      <div className="flex h-[400px] md:h-[560px] w-full flex-col items-center justify-center gap-4 rounded-[32px] border bg-muted/30 p-8 text-center">
+      <div className="flex h-[600px] md:h-[800px] w-full flex-col items-center justify-center gap-4 rounded-[32px] border bg-muted/30 p-8 text-center">
         <p className="font-bold text-muted-foreground">Featured products will appear when the store is connected.</p>
         <Button render={<Link href="/products" />}>Browse catalog</Button>
       </div>
@@ -70,35 +70,35 @@ export default function HeroProductSlides({
   const imageUrl = product.images?.[0]?.image;
 
   return (
-    <div className="relative w-full overflow-hidden rounded-[32px] border bg-white shadow-xl">
-      <div className="relative aspect-[4/3] md:aspect-[16/10] w-full bg-cream">
+    <div className="relative w-full overflow-hidden bg-white shadow-xl">
+      <div className="relative aspect-[16/9] md:aspect-[21/9] w-full bg-cream">
         {imageUrl ? (
           <Image
             src={imageUrl}
             alt={product.title}
             fill
             className="object-cover"
-            sizes="(max-width: 1024px) 100vw, 50vw"
+            sizes="100vw"
             priority={index === 0}
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="flex h-full min-h-[280px] items-center justify-center text-muted-foreground">No image</div>
+          <div className="flex h-full min-h-[400px] items-center justify-center text-muted-foreground">No image</div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 text-white">
-          <p className="text-xs font-black uppercase tracking-widest text-primary">Featured</p>
-          <h2 className="mt-2 text-2xl md:text-4xl font-black uppercase tracking-tighter leading-tight line-clamp-2">
+        <div className="absolute bottom-0 left-0 right-0 p-8 md:p-16 text-white">
+          <p className="text-sm font-black uppercase tracking-widest text-primary mb-4">Featured</p>
+          <h2 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-tight line-clamp-2 mb-4">
             {product.title}
           </h2>
-          <p className="mt-2 text-xl font-black text-primary">
+          <p className="text-2xl md:text-3xl font-black text-primary mb-8">
             {formatEtb(getEffectiveUnitPrice(product))}
           </p>
           <Button
-            className="mt-4 h-12 rounded-2xl font-black uppercase"
+            className="h-14 px-8 rounded-2xl font-black uppercase text-lg"
             render={<Link href={`/products/${product.id}`} />}
           >
-            View product
+            Shop Now
           </Button>
         </div>
       </div>
