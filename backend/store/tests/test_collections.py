@@ -7,7 +7,7 @@ from store.models import Collection,Product
 @pytest.fixture
 def create_collection(api_client):
     def do_create_collection(collection):
-        return api_client.post('/store/collections/',collection)
+        return api_client.post('/api/v1/store/collections/',collection)
     return do_create_collection
 
 
@@ -43,7 +43,7 @@ class TestCreateColletions:
 class TestRetrieveCollections:
     def test_if_collection_exist_return_200(self,api_client):
         collection = baker.make(Collection)
-        response = api_client.get(f'/store/collections/{collection.id}/')
+        response = api_client.get(f'/api/v1/store/collections/{collection.id}/')
         
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {

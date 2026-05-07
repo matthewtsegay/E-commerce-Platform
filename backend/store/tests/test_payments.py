@@ -1,6 +1,7 @@
 import pytest
 from rest_framework import status
 from store.models import Order, Payment, Customer, Collection
+from unittest.mock import patch
 
 @pytest.fixture
 def create_order(authenticate):
@@ -21,7 +22,7 @@ class TestPaymentFlow:
         """Test that starting a payment creates a Payment record and returns a mock URL."""
         user, order = create_order()
         
-        response = api_client.post(f'/api/orders/{order.id}/start_payment/')
+        response = api_client.post(f'/api/orders/{order.id}/start_payment/', {"payment_method": "chapa"}, format="json")
         
         assert response.status_code == status.HTTP_200_OK
         assert 'id' in response.data
@@ -33,6 +34,10 @@ class TestPaymentFlow:
         payment = Payment.objects.get(order=order)
         assert payment.transaction_id == response.data['id']
         assert payment.status == Payment.STATUS_PENDING
+        assert payment.payment_method == "chapa"
+
+        order.refresh_from_db()
+        assert order.payment_method == "chapa"
 
     def test_verify_payment_post_success(self, api_client, create_order):
         """Test that verifying a payment via POST updates both Payment and Order status."""
@@ -85,3 +90,33 @@ class TestPaymentFlow:
         authenticate()
         response = api_client.post('/api/payments/verify/', {'tx_ref': 'non_existent_ref'})
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    @patch("store.views.verify_chapa_transaction")
+    def test_verify_payment_failure_marks_order_failed(self, mock_verify, api_client, create_order):
+        user, order = create_order()
+        res_start = api_client.post(f'/api/orders/{order.id}/start_payment/')
+        tx_ref = res_start.data['id']
+
+        mock_verify.return_value = {"status": "error", "message": "gateway rejected"}
+        response = api_client.post('/api/v1/store/payments/verify/', {'tx_ref': tx_ref}, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        payment = Payment.objects.get(transaction_id=tx_ref)
+        order.refresh_from_db()
+        assert payment.status == Payment.STATUS_FAILED
+        assert order.payment_status == Order.PAYMENT_STATUS_FAILED
+
+    @pytest.mark.django_db
+    def test_webhook_success_updates_payment(self, api_client, create_order):
+        user, order = create_order()
+        res_start = api_client.post(f'/api/orders/{order.id}/start_payment/')
+        tx_ref = res_start.data['id']
+
+        payload = {"tx_ref": tx_ref, "status": "success"}
+        response = api_client.post('/api/v1/store/payments/webhook/', payload, format="json")
+        assert response.status_code == status.HTTP_200_OK
+
+        payment = Payment.objects.get(transaction_id=tx_ref)
+        order.refresh_from_db()
+        assert payment.status == Payment.STATUS_SUCCESS
+        assert order.payment_status == Order.PAYMENT_STATUS_COMPLETE

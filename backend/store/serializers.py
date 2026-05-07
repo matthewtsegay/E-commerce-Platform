@@ -1,5 +1,7 @@
-from decimal import Decimal,ROUND_HALF_UP
+from decimal import Decimal, ROUND_HALF_UP
+import re
 from django.db import transaction
+from django.db.models import F
 from rest_framework import serializers
 from likes.models import LikedItem
 from .signals import order_created
@@ -73,15 +75,32 @@ class ProductSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
-        # Ensure at least one of price or unit_price is provided on create
+        # Ensure at least one of price or unit_price is provided on create.
+        # Also prevent ambiguous payloads where both are provided but differ.
         if not self.instance:
-            if 'price' not in data and 'price' not in self.initial_data and \
-               'unit_price' not in data and 'unit_price' not in self.initial_data:
+            if (
+                "price" not in data
+                and "price" not in self.initial_data
+                and "unit_price" not in data
+                and "unit_price" not in self.initial_data
+            ):
                 raise serializers.ValidationError({"price": "This field is required."})
+
+        raw_price = self.initial_data.get("price")
+        raw_unit = self.initial_data.get("unit_price")
+        if raw_price not in (None, "") and raw_unit not in (None, ""):
+            try:
+                if Decimal(str(raw_price)) != Decimal(str(raw_unit)):
+                    raise serializers.ValidationError(
+                        {"unit_price": "Must match price when both are provided."}
+                    )
+            except Exception:
+                # Leave parsing validation to DRF field-level validation.
+                pass
         return data
 
     # -------------------- LIKE SYSTEM --------------------
-    def get_is_liked(self, obj):
+    def get_is_liked(self, obj) -> bool:
         if "is_liked" in obj.__dict__:
             return obj.__dict__["is_liked"]
 
@@ -92,18 +111,18 @@ class ProductSerializer(serializers.ModelSerializer):
             return False
         return obj.likes.filter(user=user).exists()
     # -------------------- TAX CALCULATION --------------------
-    def get_price_with_tax(self, obj: Product):
+    def get_price_with_tax(self, obj: Product) -> Decimal:
         """Apply 10% tax to the price."""
         return (obj.price * Decimal("1.1")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     # -------------------- DISCOUNT FIELDS --------------------
-    def get_is_on_sale(self, obj: Product):
+    def get_is_on_sale(self, obj: Product) -> bool:
         return obj.is_currently_on_sale
 
-    def get_discount_active(self, obj: Product):
+    def get_discount_active(self, obj: Product) -> bool:
         return obj.discount_active or obj.get_active_promotion() is not None
 
-    def get_discount_type(self, obj: Product):
+    def get_discount_type(self, obj: Product) -> str | None:
         if obj.discount_active and obj.discount_type:
             return obj.discount_type
         promo = obj.get_active_promotion()
@@ -111,16 +130,16 @@ class ProductSerializer(serializers.ModelSerializer):
             return None
         return "percent" if Decimal(str(promo.discount)) < Decimal("100") else "fixed"
 
-    def get_discount_value(self, obj: Product):
+    def get_discount_value(self, obj: Product) -> Decimal | None:
         if obj.discount_active and obj.discount_value is not None:
             return obj.discount_value
         promo = obj.get_active_promotion()
         return getattr(promo, "discount", None) if promo else None
 
-    def get_discounted_price(self, obj: Product):
+    def get_discounted_price(self, obj: Product) -> Decimal:
         return obj.get_discounted_price().quantize(Decimal("0.01"), ROUND_HALF_UP)
 
-    def get_discount_label(self, obj: Product):
+    def get_discount_label(self, obj: Product) -> str | None:
         if obj.discount_active and obj.discount_label:
             return obj.discount_label
         promo = obj.get_active_promotion()
@@ -148,7 +167,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 class SimpleProductSerializer(serializers.ModelSerializer):
     unit_price = serializers.SerializerMethodField()
     
-    def get_unit_price(self, obj):
+    def get_unit_price(self, obj) -> Decimal:
         from decimal import ROUND_HALF_UP, Decimal
         return obj.get_discounted_price().quantize(Decimal("0.01"), ROUND_HALF_UP)
         
@@ -164,7 +183,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         model = CartItem
         fields = ['id','product','quantity','total_price']
     
-    def get_total_price(self, cart_item: CartItem):
+    def get_total_price(self, cart_item: CartItem) -> Decimal:
         from decimal import ROUND_HALF_UP, Decimal
         unit_price = cart_item.product.get_discounted_price().quantize(Decimal("0.01"), ROUND_HALF_UP)
         return cart_item.quantity * unit_price 
@@ -175,7 +194,7 @@ class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
     total_price = serializers.SerializerMethodField()
     
-    def get_total_price(self, cart):
+    def get_total_price(self, cart) -> Decimal:
         from decimal import ROUND_HALF_UP, Decimal
         total = sum([
             item.quantity * item.product.get_discounted_price().quantize(Decimal("0.01"), ROUND_HALF_UP)
@@ -188,18 +207,52 @@ class CartSerializer(serializers.ModelSerializer):
         
         
 class AddCartItemSerializer(serializers.ModelSerializer):
-    product_id=serializers.IntegerField()
-    
+    product_id = serializers.IntegerField()
+
     def validate_product_id(self, value):
         if not Product.objects.filter(pk=value).exists():
             raise serializers.ValidationError("No product with the given ID was found.")
         return value
-       
-    def save(self,**Kwargs):
+
+    def validate(self, data):
+        """
+        Check that the requested quantity does not exceed available stock,
+        accounting for any quantity already in the cart for this product.
+        """
+        product_id = data.get('product_id')
+        quantity = data.get('quantity', 1)
+        cart_id = self.context.get('cart_id')
+
+        try:
+            product = Product.objects.get(pk=product_id)
+        except Product.DoesNotExist:
+            return data  # already caught by validate_product_id
+
+        # How many units are already in the cart for this product?
+        already_in_cart = 0
+        if cart_id:
+            try:
+                existing = CartItem.objects.get(cart_id=cart_id, product_id=product_id)
+                already_in_cart = existing.quantity
+            except CartItem.DoesNotExist:
+                pass
+
+        total_requested = already_in_cart + quantity
+        if total_requested > product.inventory:
+            available = max(product.inventory - already_in_cart, 0)
+            raise serializers.ValidationError(
+                f"Only {product.inventory} unit(s) in stock. "
+                f"You already have {already_in_cart} in your cart, "
+                f"so you can add at most {available} more."
+            )
+
+        return data
+
+    def save(self, **kwargs):
         cart_id = self.context['cart_id']
         product_id = self.validated_data['product_id']
         quantity = self.validated_data['quantity']
-        
+
         try:
             cart_item = CartItem.objects.get(cart_id=cart_id, product_id=product_id)
             cart_item.quantity += quantity
@@ -207,12 +260,13 @@ class AddCartItemSerializer(serializers.ModelSerializer):
             self.instance = cart_item
         except CartItem.DoesNotExist:
             self.instance = CartItem.objects.create(cart_id=cart_id, **self.validated_data)
-            
+
         return self.instance
+
     class Meta:
         model = CartItem
-        fields = ['id','product_id','quantity']
-        
+        fields = ['id', 'product_id', 'quantity']
+
         
 class UpdateCartItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -233,12 +287,25 @@ class CustomerMeUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = ['id', 'user_id', 'phone', 'birth_date']
+
+    def validate_phone(self, value):
+        if value in (None, ""):
+            return value
+
+        # Ethiopian format: +251XXXXXXXXX (13 chars) where X are digits.
+        # Valid starting prefixes: +2519... or +2517...
+        pattern = r"^\+251(9|7)\d{8}$"
+        if not re.match(pattern, value):
+            raise serializers.ValidationError(
+                "Enter a valid Ethiopian mobile number in the format +2519XXXXXXXX or +2517XXXXXXXX."
+            )
+        return value
         
 class OrderItemSerializer(serializers.ModelSerializer):
     product = SimpleProductSerializer()
     total_price = serializers.SerializerMethodField()
 
-    def get_total_price(self, order_item):
+    def get_total_price(self, order_item) -> Decimal:
         return order_item.quantity * order_item.unit_price
 
     class Meta:
@@ -251,7 +318,15 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'customer', 'placed_at', 'payment_status', 'items', 'total_price']
+        fields = [
+            'id',
+            'customer',
+            'placed_at',
+            'payment_status',
+            'payment_method',
+            'items',
+            'total_price',
+        ]
         
 
 class UpdateOrderSerializer(serializers.ModelSerializer):
@@ -281,7 +356,7 @@ class CreateOrderSerializer(serializers.Serializer):
     def save(self, **kwargs):
         with transaction.atomic():
             cart_id = self.validated_data['cart_id']
-            
+
             # Get the logged-in user from context
             request = self.context.get('request')
             if not request:
@@ -292,23 +367,59 @@ class CreateOrderSerializer(serializers.Serializer):
             customer = Customer.objects.get(user=user)
 
             order = Order.objects.create(customer=customer)
-            
+
             cart_items = CartItem.objects.select_related('product').filter(cart_id=cart_id)
-            order_items = [
-                OrderItem(
-                    order=order,
-                    product=item.product,
-                    unit_price=item.product.price,
-                    quantity=item.quantity
-                ) for item in cart_items
-            ]
-            
+
+            # ----------------------------------------------------------------
+            # Stock reservation + validation using DB-conditional updates.
+            #
+            # This prevents race conditions where two concurrent checkouts both
+            # observe the same inventory and then subtract, driving inventory
+            # negative.
+            # ----------------------------------------------------------------
+            insufficient = []
+            order_items = []
+
+            for item in cart_items:
+                updated = Product.objects.filter(
+                    pk=item.product_id,
+                    inventory__gte=item.quantity,
+                ).update(
+                    inventory=F('inventory') - item.quantity
+                )
+
+                if updated == 0:
+                    insufficient.append(
+                        f"'{item.product.title}': requested {item.quantity}, "
+                        f"only {item.product.inventory} in stock."
+                    )
+                    continue
+
+                order_items.append(
+                    OrderItem(
+                        order=order,
+                        product=item.product,
+                        unit_price=item.product.price,
+                        quantity=item.quantity,
+                    )
+                )
+
+            if insufficient:
+                # Raising here aborts the whole transaction, rolling back any
+                # successful conditional updates.
+                raise serializers.ValidationError(
+                    "Some items are out of stock or exceed available quantity: "
+                    + " | ".join(insufficient)
+                )
+
             OrderItem.objects.bulk_create(order_items)
+
             Cart.objects.filter(pk=cart_id).delete()
-            
+
             order_created.send_robust(sender=order.__class__, order=order)
-            
+
             return order
+
 
 
 class PromoBannerSerializer(serializers.ModelSerializer):
@@ -363,7 +474,7 @@ class PromoBannerSerializer(serializers.ModelSerializer):
             attrs["animation"] = PromoBanner.ANIM_NONE
         return attrs
 
-    def get_images(self, obj: PromoBanner):
+    def get_images(self, obj: PromoBanner) -> list[dict]:
         if not obj.image_url:
             return []
         return [{"id": obj.id, "image": obj.image_url}]
@@ -396,3 +507,28 @@ class MembershipPlanSerializer(serializers.ModelSerializer):
             "price",
             "is_active",
         ]
+
+
+class PaymentInitiateSerializer(serializers.Serializer):
+    order_id = serializers.IntegerField()
+    return_url = serializers.URLField(required=False, allow_blank=True)
+    payment_method = serializers.CharField(required=False, allow_blank=True, default="chapa")
+
+
+class PaymentVerifySerializer(serializers.Serializer):
+    tx_ref = serializers.CharField()
+
+
+class PaymentWebhookSerializer(serializers.Serializer):
+    tx_ref = serializers.CharField(required=False)
+    status = serializers.CharField(required=False)
+    data = serializers.DictField(required=False)
+
+    def validate(self, attrs):
+        tx_ref = attrs.get("tx_ref")
+        if not tx_ref and isinstance(attrs.get("data"), dict):
+            tx_ref = attrs["data"].get("tx_ref")
+        if not tx_ref:
+            raise serializers.ValidationError({"tx_ref": "Transaction reference is required."})
+        attrs["tx_ref"] = tx_ref
+        return attrs

@@ -12,10 +12,11 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated,AllowAny,IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from rest_framework.mixins import CreateModelMixin ,RetrieveModelMixin,\
                                   DestroyModelMixin ,UpdateModelMixin
 from rest_framework.viewsets import ModelViewSet,GenericViewSet
-from rest_framework import status
+from rest_framework import status, serializers
 from store.filters import ProductFilter
 from store.pagination import DefaultPagination
 from django.http import JsonResponse
@@ -23,6 +24,7 @@ from django.http import JsonResponse
 from django.contrib.contenttypes.models import ContentType
 from likes.models import LikedItem
 from .permissions import IsAdminOrReadOnly,ViewCustomerHistoryPermission
+from .permissions import IsAdminRole
 from .models import (
     Product,
     Collection,
@@ -57,11 +59,21 @@ from .serializers import (
     PromoBannerSerializer,
     PaymentMethodConfigSerializer,
     MembershipPlanSerializer,
+    PaymentInitiateSerializer,
+    PaymentVerifySerializer,
+    PaymentWebhookSerializer,
 )
 from django.urls import reverse
 
 
 _product_content_type = None
+
+
+class AdminStatsResponseSerializer(serializers.Serializer):
+    total_sales = serializers.DecimalField(max_digits=12, decimal_places=2)
+    total_orders = serializers.IntegerField()
+    total_products = serializers.IntegerField()
+    total_customers = serializers.IntegerField()
 
 def get_product_content_type():
     global _product_content_type
@@ -142,6 +154,36 @@ class ProductViewSet(ModelViewSet):
         return super().destroy(request, *args, **kwargs)
     
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(name="product_pk", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+    retrieve=extend_schema(
+        parameters=[
+            OpenApiParameter(name="product_pk", location=OpenApiParameter.PATH, type=int),
+            OpenApiParameter(name="pk", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+    create=extend_schema(
+        parameters=[
+            OpenApiParameter(name="product_pk", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+    partial_update=extend_schema(
+        parameters=[
+            OpenApiParameter(name="product_pk", location=OpenApiParameter.PATH, type=int),
+            OpenApiParameter(name="pk", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+    destroy=extend_schema(
+        parameters=[
+            OpenApiParameter(name="product_pk", location=OpenApiParameter.PATH, type=int),
+            OpenApiParameter(name="pk", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+)
 class ProductImageViewSet(ModelViewSet):
     serializer_class = ProductImageSerializer
     permission_classes = [IsAdminOrReadOnly]
@@ -153,6 +195,36 @@ class ProductImageViewSet(ModelViewSet):
     def get_queryset(self):
         return ProductImage.objects.filter(product_id=self.kwargs['product_pk'])
     
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(name="product_pk", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+    retrieve=extend_schema(
+        parameters=[
+            OpenApiParameter(name="product_pk", location=OpenApiParameter.PATH, type=int),
+            OpenApiParameter(name="pk", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+    create=extend_schema(
+        parameters=[
+            OpenApiParameter(name="product_pk", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+    partial_update=extend_schema(
+        parameters=[
+            OpenApiParameter(name="product_pk", location=OpenApiParameter.PATH, type=int),
+            OpenApiParameter(name="pk", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+    destroy=extend_schema(
+        parameters=[
+            OpenApiParameter(name="product_pk", location=OpenApiParameter.PATH, type=int),
+            OpenApiParameter(name="pk", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+)
 class ReviewViewSet(ModelViewSet): 
     serializer_class = ReviewSerializer 
 
@@ -207,6 +279,36 @@ class CartViewSet(CreateModelMixin,
         serializer.save(customer=customer)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(name="cart_pk", location=OpenApiParameter.PATH, type=str),
+        ]
+    ),
+    retrieve=extend_schema(
+        parameters=[
+            OpenApiParameter(name="cart_pk", location=OpenApiParameter.PATH, type=str),
+            OpenApiParameter(name="id", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+    create=extend_schema(
+        parameters=[
+            OpenApiParameter(name="cart_pk", location=OpenApiParameter.PATH, type=str),
+        ]
+    ),
+    partial_update=extend_schema(
+        parameters=[
+            OpenApiParameter(name="cart_pk", location=OpenApiParameter.PATH, type=str),
+            OpenApiParameter(name="id", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+    destroy=extend_schema(
+        parameters=[
+            OpenApiParameter(name="cart_pk", location=OpenApiParameter.PATH, type=str),
+            OpenApiParameter(name="id", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+)
 class CartItemViewSet(ModelViewSet):
     permission_classes = [AllowAny]
     http_method_names = ['get','post','patch','delete']
@@ -245,7 +347,9 @@ class CustomerViewSet(ModelViewSet):
     
     @action(detail=False, methods=['GET','PUT'], permission_classes=[IsAuthenticated])
     def me(self,request):
-        customer = Customer.objects.get(user_id=request.user.id)
+        # Customer profile is linked 1:1 with the user; create it on-demand
+        # to keep profile updates robust.
+        customer, _ = Customer.objects.get_or_create(user=request.user)
         if request.method == 'GET':
             serializer = CustomerSerializer(customer)
             return Response(serializer.data)
@@ -347,8 +451,9 @@ class AdminStatsView(APIView):
     """
     Lightweight admin stats endpoint used by the frontend admin dashboard.
     """
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminRole]
 
+    @extend_schema(responses=AdminStatsResponseSerializer)
     def get(self, request, *args, **kwargs):
         total_products = Product.objects.count()
         total_customers = Customer.objects.count()
@@ -378,6 +483,7 @@ class RecommendedProductsView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(responses=ProductSerializer(many=True))
     def get(self, request, *args, **kwargs):
         # Prefer products with most likes; fall back to arbitrary ordering.
         products = (
@@ -389,54 +495,148 @@ class RecommendedProductsView(APIView):
         )
         serializer = ProductSerializer(products, many=True, context={"request": request})
         return Response(serializer.data)
-from .utils.chapa import initialize_chapa_payment, verify_chapa_transaction
+from .utils.chapa import initialize_chapa_payment, verify_chapa_transaction, validate_webhook_signature
 
 class PaymentViewSet(GenericViewSet):
     permission_classes = [IsAuthenticated]
+    serializer_class = PaymentVerifySerializer
+
+    def get_permissions(self):
+        if self.action == "webhook":
+            return [AllowAny()]
+        return super().get_permissions()
+
+    def get_serializer_class(self):
+        if self.action == "initiate":
+            return PaymentInitiateSerializer
+        if self.action == "webhook":
+            return PaymentWebhookSerializer
+        return PaymentVerifySerializer
 
     @action(detail=False, methods=['POST'])
     def initiate(self, request):
-        order_id = request.data.get('order_id')
-        return_url = request.data.get('return_url')
-        
-        if not order_id:
-            return Response({"error": "order_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        input_serializer = self.get_serializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        payload = input_serializer.validated_data
+        order_id = payload.get("order_id")
+        return_url = payload.get("return_url")
+        payment_method = payload.get("payment_method", "chapa")
         
         try:
             order = Order.objects.get(id=order_id, customer__user=request.user)
         except Order.DoesNotExist:
             return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
         
+        # Persist the selected payment method on the order.
+        if order.payment_method != payment_method:
+            order.payment_method = payment_method
+            order.save(update_fields=["payment_method"])
+
         # Create or get existing payment record
         payment, created = Payment.objects.get_or_create(
             order=order,
-            defaults={'amount': order.total}
+            defaults={'amount': order.total, 'payment_method': payment_method}
         )
+
+        if not created:
+            # Allow retries (e.g., after a failure) to update the selected method and amount.
+            if payment.payment_method != payment_method or payment.amount != order.total:
+                payment.payment_method = payment_method
+                payment.amount = order.total
+                payment.save(update_fields=["payment_method", "amount"])
         
         # Call Chapa Utility
         res = initialize_chapa_payment(order, return_url)
         
         if res.get('status') == 'success':
             payment.transaction_id = res['data']['tx_ref']
-            payment.save()
-            return Response(res['data'])
+            payment.init_payload = res
+            payment.save(update_fields=["transaction_id", "init_payload"])
+            return Response({**res['data'], "payment_method": payment_method})
         
         return Response({"error": res.get('message', 'Failed to initialize payment')}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['POST'])
     def verify(self, request):
-        tx_ref = request.data.get('tx_ref')
-        if not tx_ref:
-            return Response({"error": "tx_ref is required"}, status=status.HTTP_400_BAD_REQUEST)
+        input_serializer = self.get_serializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        tx_ref = input_serializer.validated_data["tx_ref"]
             
         res = verify_chapa_transaction(tx_ref)
         
         if res.get('status') == 'success':
             try:
-                payment = Payment.objects.get(transaction_id=tx_ref)
+                payment = Payment.objects.select_related("order__customer__user").get(transaction_id=tx_ref)
+                if not request.user.is_staff and payment.order.customer.user_id != request.user.id:
+                    return Response(
+                        {"detail": "You do not have permission to verify this payment."},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                if (
+                    payment.payment_method
+                    and payment.order.payment_method
+                    and payment.payment_method != payment.order.payment_method
+                ):
+                    return Response(
+                        {"detail": "Payment method mismatch for this transaction."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                payment.verification_payload = res
+                payment.save(update_fields=["verification_payload"])
                 payment.mark_success()
                 return Response({"status": "success", "message": "Payment verified"})
             except Payment.DoesNotExist:
                 return Response({"error": "Payment record not found"}, status=status.HTTP_404_NOT_FOUND)
-                
+
+        # Failure / retry path
+        try:
+            payment = Payment.objects.select_related("order__customer__user").get(transaction_id=tx_ref)
+            if not request.user.is_staff and payment.order.customer.user_id != request.user.id:
+                return Response(
+                    {"detail": "You do not have permission to verify this payment."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            if (
+                payment.payment_method
+                and payment.order.payment_method
+                and payment.payment_method != payment.order.payment_method
+            ):
+                return Response(
+                    {"detail": "Payment method mismatch for this transaction."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            payment.verification_payload = res
+            payment.save(update_fields=["verification_payload"])
+            payment.mark_failed(reason=res.get("message") or res.get("error") or "Payment verification failed")
+        except Payment.DoesNotExist:
+            return Response({"error": "Payment record not found"}, status=status.HTTP_404_NOT_FOUND)
+
         return Response({"error": "Payment verification failed"}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['POST'])
+    def webhook(self, request):
+        signature = request.headers.get("X-Chapa-Signature")
+        if not validate_webhook_signature(request.body, signature):
+            return Response({"detail": "Invalid webhook signature."}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payload = serializer.validated_data
+
+        tx_ref = payload["tx_ref"]
+        status_value = (payload.get("status") or payload.get("data", {}).get("status") or "").lower()
+
+        try:
+            payment = Payment.objects.select_related("order").get(transaction_id=tx_ref)
+        except Payment.DoesNotExist:
+            return Response({"detail": "Payment record not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        payment.verification_payload = request.data
+        payment.save(update_fields=["verification_payload"])
+
+        if status_value in {"success", "completed"}:
+            payment.mark_success()
+            return Response({"detail": "Webhook processed (success)."}, status=status.HTTP_200_OK)
+
+        payment.mark_failed(reason=payload.get("message") or status_value or "Webhook marked as failed")
+        return Response({"detail": "Webhook processed (failed)."}, status=status.HTTP_200_OK)

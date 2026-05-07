@@ -1,20 +1,24 @@
 {% extends "admin/base.html" %}
 
-{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin')
+}}{% endblock %}
 
 {% block extrahead %}
 {{ block.super }}
 <style>
     /* NEBI STORE Premium Theme: Gold, Black, White */
     :root {
-        --primary: #d4af37 !important;           /* Golden */
-        --secondary: #000000 !important;         /* Black */
+        --primary: #d4af37 !important;
+        /* Golden */
+        --secondary: #000000 !important;
+        /* Black */
         --accent: #d4af37 !important;
-        
-        --header-bg: #000000 !important;         /* True Black */
+
+        --header-bg: #000000 !important;
+        /* True Black */
         --header-color: #d4af37 !important;
         --header-link-color: #ffffff !important;
-        
+
         --breadcrumbs-bg: #ffffff !important;
         --link-fg: #d4af37 !important;
     }
@@ -26,11 +30,14 @@
         border-bottom: 3px solid #d4af37 !important;
     }
 
-    #header a:link, #header a:visited {
+    #header a:link,
+    #header a:visited {
         color: #ffffff !important;
     }
 
-    .module h2, .module caption, .inline-group h2 {
+    .module h2,
+    .module caption,
+    .inline-group h2 {
         background: #000000 !important;
         color: #d4af37 !important;
     }
@@ -44,7 +51,11 @@
         color: #d4af37 !important;
     }
 
-    .button, input[type=submit], input[type=button], .submit-row input, a.button {
+    .button,
+    input[type=submit],
+    input[type=button],
+    .submit-row input,
+    a.button {
         background: #d4af37 !important;
         color: #fff !important;
     }
@@ -55,7 +66,8 @@
     }
 
     /* Category headers in the main index */
-    .section h2, .section caption {
+    .section h2,
+    .section caption {
         background: #000000 !important;
         color: #d4af37 !important;
     }

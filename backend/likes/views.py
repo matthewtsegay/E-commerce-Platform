@@ -4,11 +4,30 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
 from django.contrib.contenttypes.models import ContentType
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 
 from store.models import Product
 from .models import LikedItem
 from .serializers import LikedItemSerializer
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(name="product_pk", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+    create=extend_schema(
+        parameters=[
+            OpenApiParameter(name="product_pk", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+    destroy=extend_schema(
+        parameters=[
+            OpenApiParameter(name="product_pk", location=OpenApiParameter.PATH, type=int),
+            OpenApiParameter(name="pk", location=OpenApiParameter.PATH, type=int),
+        ]
+    ),
+)
 class ProductLikeViewSet(viewsets.GenericViewSet):
     """
     Nested under /products/{product_pk}/likes/

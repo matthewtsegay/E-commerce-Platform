@@ -12,6 +12,12 @@ class JWTToSessionMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Proxy-friendly scheme handling: ensure request.is_secure() reflects
+        # the original client scheme when behind a reverse proxy.
+        forwarded_proto = request.META.get("HTTP_X_FORWARDED_PROTO")
+        if forwarded_proto:
+            request.META["wsgi.url_scheme"] = forwarded_proto.split(",")[0].strip()
+
         # Only try to sync if user is not already session-authenticated
         if not request.user.is_authenticated:
             # Look for the access token in cookies (set by the frontend)
@@ -27,7 +33,11 @@ class JWTToSessionMiddleware:
                         # Log the user into the session automatically
                         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
                 except (InvalidToken, TokenError):
-                    # Token is expired or invalid, ignore
+                    # Token is expired or invalid, ignore.
+                    # We don't want auth middleware to break requests.
+                    pass
+                except Exception:
+                    # Defensive: never block request processing because of auth bridging.
                     pass
 
         return self.get_response(request)

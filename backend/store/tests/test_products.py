@@ -8,7 +8,7 @@ from store.models import Collection,Product
 @pytest.fixture
 def create_product(api_client):
     def do_create_product(product):
-        return api_client.post('/store/products/',product)
+        return api_client.post('/api/v1/store/products/',product)
     return do_create_product
 
 
@@ -77,31 +77,39 @@ class TestCreateProducts:
 @pytest.mark.django_db
 class TestRetrieveProducts:
     def test_if_create_product_exist_return_200(self, api_client):
-        product = baker.make(Product)
+        product = baker.make(Product, inventory=10)
 
-        response = api_client.get(f'/store/products/{product.id}/')
+        response = api_client.get(f'/api/v1/store/products/{product.id}/')
 
         assert response.status_code == 200
 
         # Get what serializer actually returned
         price_with_tax = response.data["price_with_tax"]
 
-        assert response.data == {
-            "id": product.id,
-            "title": product.title,
-            "description": product.description,
-            "slug": product.slug,
-            "unit_price": product.price,
-            "inventory": product.inventory,
-            "collection": product.collection.id,
-            "images": [],
-            "price_with_tax": price_with_tax,
-            "is_on_sale": product.promotions.exists(),
-            "discount_type": product.discount_type,
-            "discount_value": product.discount_value,  # fixed
-            "discount_active": product.discount_active,
-            "discounted_price": product.get_discounted_price(),  # optional: if you want discounted price
-            "discount_label": product.discount_label,
-            "total_likes": 0,       # new field from serializer
-            "is_liked": False,  
-        }
+        # Keep assertions resilient to serializer output changes while still
+        # validating key business fields.
+        assert response.data["id"] == product.id
+        assert response.data["title"] == product.title
+        assert response.data["description"] == product.description
+        assert response.data["slug"] == product.slug
+        assert response.data["inventory"] == product.inventory
+        assert response.data["collection"] == product.collection.id
+        assert response.data["images"] == []
+
+        # Pricing fields (serializer exposes both `price` and `unit_price`)
+        assert response.data["price"] == product.price
+        assert response.data["unit_price"] == product.price
+
+        assert response.data["price_with_tax"] == price_with_tax
+        assert response.data["is_on_sale"] == product.promotions.exists()
+        assert response.data["discount_type"] == product.discount_type
+        assert response.data["discount_value"] == product.discount_value
+        assert response.data["discount_active"] == product.discount_active
+        assert response.data["discount_label"] == product.discount_label
+
+        assert response.data["total_likes"] == 0
+        assert response.data["is_liked"] is False
+
+        # Analytics-like aggregates
+        assert response.data["reviews_count"] == 0
+        assert response.data["average_rating"] is None

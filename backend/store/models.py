@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
-from django.db.models import Sum, F
+from django.db.models import Sum, F, Q
 from decimal import Decimal
 from django.utils import timezone
 from uuid import uuid4
@@ -41,7 +41,7 @@ class Product(models.Model):
     slug = models.SlugField(unique=True, blank=True, null=True)
     description = models.TextField()
     price = models.DecimalField(max_digits=6, decimal_places=2, validators=[MinValueValidator(1)])
-    inventory = models.IntegerField(validators=[MinValueValidator(1)])
+    inventory = models.IntegerField(validators=[MinValueValidator(0)])
     last_update = models.DateTimeField(auto_now=True)
     collection = models.ForeignKey(Collection, on_delete=models.PROTECT, related_name='products')
     promotions = models.ManyToManyField(Promotion, blank=True)
@@ -113,6 +113,12 @@ class Product(models.Model):
 
     class Meta:
         ordering = ['title']
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(inventory__gte=0),
+                name="product_inventory_non_negative",
+            )
+        ]
 
 
 
@@ -189,6 +195,10 @@ class Order(models.Model):
     placed_at = models.DateTimeField(auto_now_add=True)
     payment_status = models.CharField(max_length=1,
                         choices=PAYMENT_STATUS_CHOICES ,default=PAYMENT_STATUS_PENDING)
+    # Stores the selected payment provider/method key (e.g. "chapa").
+    # Kept as a CharField for backward compatibility and to avoid hard
+    # coupling to PaymentMethodConfig records.
+    payment_method = models.CharField(max_length=50, null=True, blank=True)
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
     
     @property
@@ -217,6 +227,13 @@ class Payment(models.Model):
     # amount you expect the payment gateway to receive (mirror of order total)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     transaction_id = models.CharField(max_length=255, null=True, blank=True)
+    # Provider/method key used when the payment was initiated (e.g. "chapa").
+    payment_method = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+
+    # Optional audit trail payloads for debugging/reconciliation.
+    init_payload = models.JSONField(null=True, blank=True)
+    verification_payload = models.JSONField(null=True, blank=True)
+    failure_reason = models.TextField(null=True, blank=True)
 
     # small enum for status
     STATUS_PENDING = 'P'
@@ -233,18 +250,37 @@ class Payment(models.Model):
     verified_at = models.DateTimeField(null=True, blank=True)
 
     def mark_success(self):
+        # Idempotency: avoid double membership updates and repeated writes.
+        if self.status == self.STATUS_SUCCESS:
+            return
+
         self.status = self.STATUS_SUCCESS
         self.verified_at = timezone.now()
-        self.save()
+        self.save(update_fields=["status", "verified_at"])
+
         self.order.payment_status = Order.PAYMENT_STATUS_COMPLETE
-        self.order.save()
-        
+        self.order.save(update_fields=["payment_status"])
         self.order.customer.update_membership()
 
-    def mark_failed(self):
+    def mark_failed(self, reason: str | None = None):
+        # Idempotency: keep the latest failure reason if provided.
+        # Do not downgrade a completed payment to failed.
+        if self.status == self.STATUS_SUCCESS:
+            return
+
+        if self.status == self.STATUS_FAILED:
+            if reason and not self.failure_reason:
+                self.failure_reason = reason
+                self.save(update_fields=["failure_reason"])
+            return
+
         self.status = self.STATUS_FAILED
         self.verified_at = timezone.now()
-        self.save()
+        self.failure_reason = reason or self.failure_reason
+        self.save(update_fields=["status", "verified_at", "failure_reason"])
+
+        self.order.payment_status = Order.PAYMENT_STATUS_FAILED
+        self.order.save(update_fields=["payment_status"])
         
 class Cart(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)

@@ -1,9 +1,7 @@
-from django.urls import path,include
-from rest_framework.routers import SimpleRouter,DefaultRouter
-from rest_framework_nested import routers
+from django.urls import path
+from rest_framework_nested import routers  # pyright: ignore[reportMissingImports]
 from . import views
 from likes.views import ProductLikeViewSet 
-from pprint import pprint
 
 app_name = "store"
 
@@ -22,14 +20,37 @@ router.register('payments', views.PaymentViewSet, basename='payments')
 
 
 product_router = routers.NestedDefaultRouter(router,r'products',lookup='product')
-product_router.register('reviews',views.ReviewViewSet,basename='product-reviews')
-product_router.register('images',views.ProductImageViewSet,basename='product-images')
 product_router.register('likes', ProductLikeViewSet, basename='product-likes')
 
 cart_router = routers.NestedDefaultRouter(router,r'carts',lookup='cart')
 cart_router.register('items',views.CartItemViewSet,basename='cart-items')
 
 urlpatterns = router.urls + product_router.urls + cart_router.urls + [
+    # Explicit typed nested routes for better schema generation.
+    path(
+        "products/<int:product_pk>/reviews/",
+        views.ReviewViewSet.as_view({"get": "list", "post": "create"}),
+        name="product-reviews-list",
+    ),
+    path(
+        "products/<int:product_pk>/reviews/<int:pk>/",
+        views.ReviewViewSet.as_view(
+            {"get": "retrieve", "put": "update", "patch": "partial_update", "delete": "destroy"}
+        ),
+        name="product-reviews-detail",
+    ),
+    path(
+        "products/<int:product_pk>/images/",
+        views.ProductImageViewSet.as_view({"get": "list", "post": "create"}),
+        name="product-images-list",
+    ),
+    path(
+        "products/<int:product_pk>/images/<int:pk>/",
+        views.ProductImageViewSet.as_view(
+            {"get": "retrieve", "put": "update", "patch": "partial_update", "delete": "destroy"}
+        ),
+        name="product-images-detail",
+    ),
     path('admin-stats/', views.AdminStatsView.as_view(), name='admin-stats'),
     path('recommended-products/', views.RecommendedProductsView.as_view(), name='recommended-products'),
 ]

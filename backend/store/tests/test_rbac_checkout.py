@@ -14,7 +14,7 @@ def test_non_owner_cannot_read_other_users_cart(api_client, authenticate):
   other_user = baker.make("core.User")
   api_client.force_authenticate(user=other_user)
 
-  response = api_client.get(f"/store/carts/{cart.id}/")
+  response = api_client.get(f"/api/v1/store/carts/{cart.id}/")
   assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -22,7 +22,7 @@ def test_non_owner_cannot_read_other_users_cart(api_client, authenticate):
 def test_order_creation_rejects_foreign_cart(api_client):
   owner = baker.make("core.User")
   owner_customer, _ = Customer.objects.get_or_create(user=owner)
-  product = baker.make(Product, price=15)
+  product = baker.make(Product, price=15, inventory=10)
   cart = baker.make(Cart, customer=owner_customer)
   baker.make(CartItem, cart=cart, product=product, quantity=1)
 
@@ -30,7 +30,7 @@ def test_order_creation_rejects_foreign_cart(api_client):
   api_client.force_authenticate(user=other_user)
   Customer.objects.get_or_create(user=other_user)
 
-  response = api_client.post("/store/orders/", {"cart_id": str(cart.id)}, format="json")
+  response = api_client.post("/api/v1/store/orders/", {"cart_id": str(cart.id)}, format="json")
   assert response.status_code == status.HTTP_400_BAD_REQUEST
   assert "access" in str(response.data).lower()
 
@@ -42,20 +42,20 @@ def test_non_staff_cannot_patch_payment_status(api_client):
   order = baker.make(Order, customer=customer)
   api_client.force_authenticate(user=user)
 
-  response = api_client.patch(f"/store/orders/{order.id}/", {"payment_status": "C"}, format="json")
+  response = api_client.patch(f"/api/v1/store/orders/{order.id}/", {"payment_status": "C"}, format="json")
   assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 @pytest.mark.django_db
 def test_review_update_blocked_for_non_owner(api_client):
-  product = baker.make(Product)
+  product = baker.make(Product, inventory=10)
   owner = baker.make("core.User")
   intruder = baker.make("core.User")
   review = baker.make(Review, product=product, user=owner, name="Owner", description="A")
   api_client.force_authenticate(user=intruder)
 
   response = api_client.patch(
-    f"/store/products/{product.id}/reviews/{review.id}/",
+    f"/api/v1/store/products/{product.id}/reviews/{review.id}/",
     {"description": "Hacked"},
     format="json",
   )
@@ -66,5 +66,5 @@ def test_review_update_blocked_for_non_owner(api_client):
 def test_admin_stats_requires_admin(api_client):
   user = baker.make("core.User", is_staff=False)
   api_client.force_authenticate(user=user)
-  response = api_client.get("/store/admin-stats/")
+  response = api_client.get("/api/v1/store/admin-stats/")
   assert response.status_code == status.HTTP_403_FORBIDDEN

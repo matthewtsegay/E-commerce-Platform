@@ -4,18 +4,47 @@ Replace with real gateway integration (e.g. Chapa) when ready.
 """
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import status
+from rest_framework import status, serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
 
 import uuid
 from .models import Order, Payment
 
 
+class StartPaymentRequestSerializer(serializers.Serializer):
+    payment_method = serializers.CharField(required=False, allow_blank=True, default="chapa")
+
+
+class StartPaymentResponseSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    order_id = serializers.CharField()
+    amount = serializers.FloatField()
+    currency = serializers.CharField()
+    status = serializers.CharField()
+    payment_method = serializers.CharField()
+    payment_url = serializers.CharField()
+    created_at = serializers.CharField()
+    updated_at = serializers.CharField()
+
+
+class VerifyPaymentResponseSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    status = serializers.CharField()
+    message = serializers.CharField()
+    transaction_id = serializers.CharField()
+    verified_at = serializers.CharField()
+
+
 class StartPaymentView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=StartPaymentRequestSerializer,
+        responses={200: StartPaymentResponseSerializer},
+    )
     def post(self, request, order_id):
         order = get_object_or_404(Order, pk=order_id)
         if not request.user.is_staff and order.customer.user_id != request.user.id:
@@ -23,12 +52,22 @@ class StartPaymentView(APIView):
                 {"detail": "You do not have permission to start payment for this order."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+
+        payment_method = (request.data or {}).get("payment_method", "chapa")
         
         # Mock initialization: Create or update a Payment record
         payment, created = Payment.objects.get_or_create(
             order=order,
-            defaults={'amount': order.total}
+            defaults={'amount': order.total, 'payment_method': payment_method}
         )
+
+        if payment.payment_method != payment_method:
+            payment.payment_method = payment_method
+            payment.save(update_fields=["payment_method"])
+
+        if order.payment_method != payment_method:
+            order.payment_method = payment_method
+            order.save(update_fields=["payment_method"])
         
         # Generate a unique mock transaction ID if it doesn't exist
         if not payment.transaction_id:
@@ -50,11 +89,6 @@ class StartPaymentView(APIView):
             }
         )
 
-
-from rest_framework import serializers
-from drf_spectacular.utils import extend_schema
-
-
 class PaymentVerificationSerializer(serializers.Serializer):
     tx_ref = serializers.CharField(required=False, help_text="The transaction reference (tx_ref or payment_id)")
     payment_reference = serializers.CharField(required=False)
@@ -64,7 +98,7 @@ class PaymentVerificationSerializer(serializers.Serializer):
 class VerifyPaymentView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(request=PaymentVerificationSerializer)
+    @extend_schema(request=PaymentVerificationSerializer, responses={200: VerifyPaymentResponseSerializer})
     def get(self, request):
         tx_ref = request.query_params.get("payment_id") or request.query_params.get("tx_ref")
         if not tx_ref:
@@ -72,7 +106,7 @@ class VerifyPaymentView(APIView):
         
         return self._verify(tx_ref)
 
-    @extend_schema(request=PaymentVerificationSerializer)
+    @extend_schema(request=PaymentVerificationSerializer, responses={200: VerifyPaymentResponseSerializer})
     def post(self, request):
         serializer = PaymentVerificationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -96,7 +130,13 @@ class VerifyPaymentView(APIView):
         return self._verify(tx_ref)
 
     def _verify(self, tx_ref):
-        payment = get_object_or_404(Payment, transaction_id=tx_ref)
+        payment = get_object_or_404(Payment.objects.select_related("order__customer__user"), transaction_id=tx_ref)
+
+        if not self.request.user.is_staff and payment.order.customer.user_id != self.request.user.id:
+            return Response(
+                {"detail": "You do not have permission to verify this payment."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         
         # Only mark as success if it's not already succeeded
         if payment.status != Payment.STATUS_SUCCESS:

@@ -1,6 +1,8 @@
 import requests
 import uuid
 import logging
+import hmac
+import hashlib
 from django.conf import settings
 from decimal import Decimal
 
@@ -12,7 +14,28 @@ def get_chapa_config():
         "SECRET_KEY": getattr(settings, "CHAPA_SECRET_KEY", "mock-secret-key"),
         "BASE_URL": getattr(settings, "CHAPA_API_URL", "https://api.chapa.co/v1/transaction"),
         "MOCK_MODE": getattr(settings, "CHAPA_MOCK_MODE", True),
+        "WEBHOOK_SECRET": getattr(settings, "CHAPA_WEBHOOK_SECRET", ""),
     }
+
+
+def validate_webhook_signature(raw_body: bytes, provided_signature: str | None) -> bool:
+    """
+    Validate webhook signature if CHAPA_WEBHOOK_SECRET is configured.
+    In mock mode or when no secret is configured, returns True.
+    """
+    config = get_chapa_config()
+
+    if config["MOCK_MODE"] or not config["WEBHOOK_SECRET"]:
+        return True
+    if not provided_signature:
+        return False
+
+    expected = hmac.new(
+        config["WEBHOOK_SECRET"].encode("utf-8"),
+        raw_body,
+        hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(expected, provided_signature)
 
 def initialize_chapa_payment(order, return_url, callback_url=None):
     """

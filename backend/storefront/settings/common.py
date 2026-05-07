@@ -164,8 +164,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    # Accept both Bearer and JWT prefixes to work with frontend clients
-    'AUTH_HEADER_TYPES': ('Bearer', 'JWT'),
+    # Use a single auth header type to keep OpenAPI schema unambiguous.
+    'AUTH_HEADER_TYPES': ('JWT',),
     # Short-lived access tokens for better security (applies to users and admins)
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     # Longer-lived refresh tokens with rotation and blacklisting
@@ -178,7 +178,8 @@ SIMPLE_JWT = {
 DJOSER ={
     'SERIALIZERS':{
         'user_create':'core.serializers.UserCreateSerializer',
-        'current_user':'core.serializers.UserSerializer'
+        'current_user':'core.serializers.UserSerializer',
+        'user': 'core.serializers.UserSerializer',
     }
 }
 

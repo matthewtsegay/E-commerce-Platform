@@ -68,5 +68,15 @@ class UserSerializer(BaseUserSerializer):
     class Meta(BaseUserSerializer.Meta):
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role']
 
-    def get_role(self, obj):
-        return 'admin' if obj.is_staff else 'user'
+    def get_role(self, obj) -> str:
+        # Backward-compatible default expected by the frontend is "admin" or "user".
+        # If the user is not staff, but is assigned to one of the supported role
+        # groups, we return that role (useful for future RBAC).
+        if obj.is_staff:
+            return "admin"
+
+        group_names = set(obj.groups.values_list("name", flat=True))
+        for role in ("manager", "support", "nutritionist", "analytics_admin"):
+            if role in group_names:
+                return role
+        return "user"
