@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { clearAuthCookies } from './auth';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? (process.env.NODE_ENV !== 'production' ? 'http://localhost:8000/api/v1' : '');
@@ -8,7 +8,44 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 second timeout
 });
+
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+
+// Network status
+let isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => { isOnline = true; });
+  window.addEventListener('offline', () => { isOnline = false; });
+}
+
+export const getNetworkStatus = () => isOnline;
+
+// Retry function with exponential backoff
+const retryRequest = async (error: AxiosError, retryCount: number = 0): Promise<any> => {
+  if (retryCount >= MAX_RETRIES) {
+    throw error;
+  }
+
+  // Don't retry on 4xx errors (client errors)
+  if (error.response && error.response.status >= 400 && error.response.status < 500) {
+    throw error;
+  }
+
+  // Don't retry if offline
+  if (!isOnline) {
+    throw new Error('Network is offline');
+  }
+
+  const delay = RETRY_DELAY * Math.pow(2, retryCount);
+  await new Promise(resolve => setTimeout(resolve, delay));
+
+  return api.request(error.config!);
+};
 
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
@@ -22,11 +59,12 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
+  async (error: AxiosError) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+    // Handle 401 - token refresh
+    if (error.response?.status === 401 && !originalRequest?._retry) {
+      originalRequest!._retry = true;
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
@@ -37,16 +75,32 @@ api.interceptors.response.use(
           if (typeof document !== 'undefined') {
             document.cookie = `access_token=${data.access}; path=/; max-age=900; samesite=lax`;
           }
-          originalRequest.headers.Authorization = `JWT ${data.access}`;
-          return api(originalRequest);
+          originalRequest!.headers!.Authorization = `JWT ${data.access}`;
+          return api(originalRequest!);
         } catch (err) {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
           clearAuthCookies();
           window.location.href = '/login';
+          throw err;
         }
       }
     }
+
+    // Handle network errors with retry
+    if (!error.response && error.code !== 'ECONNABORTED') {
+      try {
+        return await retryRequest(error);
+      } catch (retryError) {
+        throw new Error('Network error: Unable to connect to server. Please check your connection and try again.');
+      }
+    }
+
+    // Handle timeout
+    if (error.code === 'ECONNABORTED') {
+      throw new Error('Request timeout: Server is taking too long to respond. Please try again.');
+    }
+
     return Promise.reject(error);
   }
 );

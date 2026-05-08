@@ -46,9 +46,6 @@ export default function LoginPage() {
       const nextPath = sanitizeNextPath(new URLSearchParams(window.location.search).get('next'));
       router.push(nextPath);
     } catch (error: unknown) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Login failed:', error);
-      }
       toast.error(getApiErrorMessage(error, 'Invalid email or password.'));
     } finally {
       setIsLoading(false);

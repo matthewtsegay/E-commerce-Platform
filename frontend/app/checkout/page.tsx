@@ -27,7 +27,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('card');
-
+  const [checkoutProgress, setCheckoutProgress] = useState(1); // 1: Shipping, 2: Payment
 
   const items = cart?.items || [];
   const subtotal = items.reduce((sum, item) => sum + item.total_price, 0);
@@ -48,6 +48,9 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Move to payment step before processing
+    setCheckoutProgress(2);
+    
     setIsProcessing(true);
 
     try {
@@ -109,6 +112,17 @@ export default function CheckoutPage() {
                      Check<span className="text-primary italic">out</span>
                   </h1>
                   <p className="text-muted-foreground font-medium text-lg">Secure your gear and step into the future.</p>
+               </div>
+
+               {/* Progress Indicator */}
+               <div className="flex items-center gap-4">
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center font-black text-sm transition-all ${checkoutProgress >= 1 ? 'bg-primary text-white' : 'bg-muted'}`}>
+                     1
+                  </div>
+                  <div className={`flex-grow h-1 transition-all ${checkoutProgress >= 2 ? 'bg-primary' : 'bg-muted'}`} />
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center font-black text-sm transition-all ${checkoutProgress >= 2 ? 'bg-primary text-white' : 'bg-muted'}`}>
+                     2
+                  </div>
                </div>
 
                <form onSubmit={handleCheckout} className="space-y-12">

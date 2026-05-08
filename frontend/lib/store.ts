@@ -30,19 +30,23 @@ export const useAuth = create<AuthState>()(
 
 interface CartState {
   cart: Cart | null;
+  isLoading: boolean;
   setCart: (cart: Cart | null) => void;
   addItem: (product: Product, quantity: number) => void;
   removeItem: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
   setCartId: (id: string) => void;
   clearCart: () => void;
+  setLoading: (loading: boolean) => void;
 }
 
 export const useCart = create<CartState>()(
   persist(
     (set, get) => ({
       cart: null,
+      isLoading: false,
       setCart: (cart) => set({ cart }),
+      setLoading: (isLoading) => set({ isLoading }),
       setCartId: (id) => {
         const current = get().cart;
         if (current) {
@@ -100,6 +104,7 @@ export const useCart = create<CartState>()(
         set({ cart: { ...currentCart, items, total_price } });
       },
       clearCart: () => set({ cart: null }),
+      setLoading: (isLoading) => set({ isLoading }),
     }),
     {
       name: 'cart-storage',

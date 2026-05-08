@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
@@ -8,17 +8,44 @@ import Footer from '@/components/layout/Footer';
 import { useCart } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Truck, Gift } from 'lucide-react';
+import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Truck, Gift, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { formatEtb } from '@/lib/format-currency';
 import { computeShippingEtb, FREE_SHIPPING_MIN_ETB } from '@/lib/shipping';
 
 export default function CartPage() {
-  const { cart, removeItem, updateQuantity } = useCart();
+  const { cart, removeItem, updateQuantity, setLoading, isLoading } = useCart();
+  const [optimisticUpdates, setOptimisticUpdates] = useState<{[key: number]: boolean}>({});
   const items = cart?.items || [];
   const subtotal = items.reduce((sum, item) => sum + item.total_price, 0);
   const shipping = computeShippingEtb(subtotal);
   const total = subtotal + shipping;
+
+  const handleRemoveItem = async (productId: number) => {
+    setOptimisticUpdates(prev => ({ ...prev, [productId]: true }));
+    setLoading(true);
+    try {
+      // Simulate async operation
+      await new Promise(resolve => setTimeout(resolve, 300));
+      removeItem(productId);
+    } finally {
+      setOptimisticUpdates(prev => ({ ...prev, [productId]: false }));
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateQuantity = async (productId: number, quantity: number) => {
+    setOptimisticUpdates(prev => ({ ...prev, [productId]: true }));
+    setLoading(true);
+    try {
+      // Simulate async operation
+      await new Promise(resolve => setTimeout(resolve, 200));
+      updateQuantity(productId, quantity);
+    } finally {
+      setOptimisticUpdates(prev => ({ ...prev, [productId]: false }));
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -58,9 +85,14 @@ export default function CartPage() {
                               variant="ghost" 
                               size="icon" 
                               className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                              onClick={() => removeItem(item.product.id)}
+                              onClick={() => handleRemoveItem(item.product.id)}
+                              disabled={optimisticUpdates[item.product.id] || isLoading}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {optimisticUpdates[item.product.id] ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
                             </Button>
                           </div>
                           
@@ -70,7 +102,8 @@ export default function CartPage() {
                                 variant="ghost" 
                                 size="icon" 
                                 className="h-8 w-8 rounded-lg"
-                                onClick={() => updateQuantity(item.product.id, Math.max(1, item.quantity - 1))}
+                                onClick={() => handleUpdateQuantity(item.product.id, Math.max(1, item.quantity - 1))}
+                                disabled={optimisticUpdates[item.product.id] || isLoading}
                               >
                                 <Minus className="h-3 w-3" />
                               </Button>
@@ -79,7 +112,8 @@ export default function CartPage() {
                                 variant="ghost" 
                                 size="icon" 
                                 className="h-8 w-8 rounded-lg"
-                                onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                                onClick={() => handleUpdateQuantity(item.product.id, item.quantity + 1)}
+                                disabled={optimisticUpdates[item.product.id] || isLoading}
                               >
                                 <Plus className="h-3 w-3" />
                               </Button>

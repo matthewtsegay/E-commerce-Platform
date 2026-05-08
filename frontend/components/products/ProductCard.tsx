@@ -14,9 +14,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import StarRating from './StarRating';
 
-import { api } from '@/lib/api-client';
-import { formatEtb } from '@/lib/format-currency';
-import { getEffectiveUnitPrice } from '@/lib/product-price';
+import { trackProductClick, trackAddToCart } from '@/lib/analytics';
 
 interface ProductCardProps {
   product: Product;
@@ -32,6 +30,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation();
     e.preventDefault();
     await addToCart(product, 1);
+    trackAddToCart(product.id.toString(), product.title, getEffectiveUnitPrice(product));
   };
 
 
@@ -62,6 +61,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   const navigateToProduct = () => {
+    trackProductClick(product.id.toString(), product.title);
     router.push(`/products/${product.id}`);
   };
 

@@ -36,6 +36,8 @@ export default function ProductDetailClient({
   const [relatedProducts, setRelatedProducts] = useState<Product[]>(initialRelated);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
   const { addToCart } = useCartActions();
 
   // Review form state
@@ -114,16 +116,33 @@ export default function ProductDetailClient({
     }
   };
 
-  const effectivePrice = getEffectiveUnitPrice(product);
-  const isOnSale = product.is_on_sale && product.discounted_price;
-  const hasFreeShipping = effectivePrice >= FREE_SHIPPING_MIN_ETB;
+  const handleImageMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isZoomed) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomPosition({ x, y });
+  };
+
+  const handleImageClick = () => {
+    setIsZoomed(!isZoomed);
+  };
 
   return (
-    <main className="flex-grow container mx-auto px-4 py-8">
+    <main className="flex-grow container mx-auto px-4 py-8 pb-24 md:pb-8">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Product Images */}
         <div className="space-y-4">
-          <div className="aspect-square relative overflow-hidden rounded-3xl bg-cream">
+          <div 
+            className="aspect-square relative overflow-hidden rounded-3xl bg-cream cursor-zoom-in"
+            onMouseMove={handleImageMouseMove}
+            onClick={handleImageClick}
+            style={isZoomed ? {
+              cursor: 'zoom-out',
+              transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+              transform: 'scale(2)',
+            } : {}}
+          >
             <Image
               src={product.images?.[selectedImage]?.image || 'https://picsum.photos/seed/product/600/600'}
               alt={product.title}
@@ -180,6 +199,15 @@ export default function ProductDetailClient({
           <div className="flex flex-wrap gap-2">
             {isOnSale && <Badge variant="destructive">ON SALE</Badge>}
             {hasFreeShipping && <Badge variant="secondary">FREE SHIPPING</Badge>}
+            {product.inventory > 0 ? (
+              <Badge variant="outline" className="text-green-600 border-green-600">
+                {product.inventory < 10 ? `Only ${product.inventory} left` : 'In Stock'}
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-red-600 border-red-600">
+                Out of Stock
+              </Badge>
+            )}
           </div>
 
           {/* Quantity & Add to Cart */}
@@ -206,6 +234,34 @@ export default function ProductDetailClient({
               <ShoppingCart className="h-5 w-5 mr-2" />
               Add to Cart
             </Button>
+          </div>
+
+          {/* Mobile Sticky Add to Cart */}
+          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t p-4 z-50">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center border rounded-lg">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={quantity <= 1}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="px-4 py-2 font-bold">{quantity}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setQuantity(quantity + 1)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <Button onClick={handleAddToCart} className="flex-1 h-12">
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                Add to Cart - {formatEtb(effectivePrice * quantity)}
+              </Button>
+            </div>
           </div>
 
           {/* Actions */}

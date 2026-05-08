@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/products/ProductCard';
-import { Product } from '@/lib/types';
+import { Product, Collection } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -37,10 +37,18 @@ function ProductsContent() {
   const [sortBy, setSortBy] = useState('newest');
   const [isMounted, setIsMounted] = useState(false);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  const [collections, setCollections] = useState<Collection[]>([]);
 
   useEffect(() => {
-    setIsMounted(true);
+    const fetchCollections = async () => {
+      try {
+        const response = await api.get('/store/collections/');
+        setCollections(extractList<Collection>(response.data));
+      } catch (error) {
+        // Ignore errors for collections
+      }
+    };
+    fetchCollections();
   }, []);
 
   const priceBounds = useMemo(() => {
@@ -217,6 +225,33 @@ function ProductsContent() {
           </div>
         ) : filteredProducts.length > 0 ? (
           <>
+            {/* Collection Filter Chips */}
+            {collections.length > 0 && (
+              <div className="mb-8">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => router.push('/products')}
+                    className={`px-4 py-2 rounded-full text-sm font-bold transition-colors ${
+                      !collectionId ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {collections.map((collection) => (
+                    <button
+                      key={collection.id}
+                      onClick={() => router.push(`/products?collection_id=${collection.id}`)}
+                      className={`px-4 py-2 rounded-full text-sm font-bold transition-colors ${
+                        collectionId === collection.id.toString() ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+                      }`}
+                    >
+                      {collection.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
