@@ -1,13 +1,15 @@
-'use client';
-
 import React from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { motion } from 'motion/react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Users, Globe, Recycle, Award } from 'lucide-react';
+
+export const metadata = {
+  title: 'About Us | Nebi Store',
+  description: 'Learn about Nebi Store - premium performance gear and urban streetwear for the modern individual.',
+};
 
 export default function AboutPage() {
   return (
@@ -18,12 +20,7 @@ export default function AboutPage() {
         {/* Hero Section */}
         <section className="relative py-24 md:py-32 overflow-hidden bg-primary text-primary-foreground">
           <div className="container mx-auto px-4 relative z-10">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="max-w-4xl"
-            >
+            <div className="max-w-4xl">
               <h1 className="text-6xl md:text-8xl font-black tracking-tighter uppercase leading-[0.8] mb-8">
                 We Build <br />
                 <span className="text-white italic">The Standard</span> <br />
@@ -33,7 +30,7 @@ export default function AboutPage() {
                 Founded in 2026, Nebi Store is more than just an e-commerce platform. 
                 We are a hub for performance-driven individuals who demand style without compromise.
               </p>
-            </motion.div>
+            </div>
           </div>
           <div className="absolute top-0 right-0 w-1/2 h-full hidden lg:block opacity-20">
              <Image 
@@ -41,7 +38,7 @@ export default function AboutPage() {
                 alt="Architecture" 
                 fill 
                 className="object-cover"
-                referrerPolicy="no-referrer"
+                sizes="50vw"
              />
           </div>
         </section>

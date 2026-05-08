@@ -166,9 +166,12 @@ npm run dev
    - Click **New Project** → **Import Git Repository** → select your GitHub repo.
    - Vercel auto-detects a Next.js project.
 
+      - Set the **Root Directory** to `frontend` so Vercel builds the Next.js app in the correct folder.
+
 3. **Configure Environment Variables**  
    - In the Vercel dashboard, navigate to **Project Settings → Environment Variables**.
    - Add `NEXT_PUBLIC_API_URL` pointing to your production backend API (e.g., `https://api.nebistore.com`).
+   - Add `NEXT_PUBLIC_API_URL` pointing to your production backend API (e.g., `https://api.nebistore.com/api/v1`).
 
 4. **Deploy**  
    - Click **Deploy**. Vercel will run `npm install` and `npm run build`.

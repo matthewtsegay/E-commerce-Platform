@@ -15,6 +15,8 @@
 4. Vercel auto-detects Next.js configuration
 5. Click "Deploy"
 
+> Important: set the **Root Directory** to `frontend` during project import so Vercel builds the correct app.
+
 ### 3. Configure Environment Variables
 
 In Vercel Dashboard:

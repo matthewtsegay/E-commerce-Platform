@@ -81,10 +81,8 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Environment configuration
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1',
-  },
+  // Environment variables are loaded from .env.local or Vercel project settings.
+  // No hardcoded production API URL is injected here.
 };
 
 export default nextConfig;

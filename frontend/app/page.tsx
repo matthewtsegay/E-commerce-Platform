@@ -25,14 +25,21 @@ export const metadata = {
 
 
 export default async function Home() {
-  // Parallel fetch for homepage data
-  const [heroProducts, featuredProducts, latestProducts, trendingProducts, collections] = await Promise.all([
-    serverApiFetch<Product>('/store/products/?limit=8'),
-    serverApiFetch<Product>('/store/products/?is_on_sale=true&limit=4'),
-    serverApiFetch<Product>('/store/products/?ordering=-created_at&limit=4'),
-    serverApiFetch<Product>('/store/products/?ordering=-total_likes&limit=4'),
-    serverApiFetch<Collection>('/store/collections/'),
+  // Parallel fetch for homepage data with appropriate caching
+  const [heroResult, featuredResult, latestResult, trendingResult, collectionsResult] = await Promise.all([
+    serverApiFetch<Product>('/store/products/?limit=8', { revalidate: 300 }), // 5 min for hero
+    serverApiFetch<Product>('/store/products/?is_on_sale=true&limit=4', { revalidate: 600 }), // 10 min for featured
+    serverApiFetch<Product>('/store/products/?ordering=-created_at&limit=4', { revalidate: 300 }), // 5 min for latest
+    serverApiFetch<Product>('/store/products/?ordering=-total_likes&limit=4', { revalidate: 600 }), // 10 min for trending
+    serverApiFetch<Collection>('/store/collections/', { revalidate: 1800 }), // 30 min for collections
   ]);
+
+  // Extract data with fallbacks
+  const heroProducts = heroResult.error ? [] : (heroResult.data as Product[]);
+  const featuredProducts = featuredResult.error ? [] : (featuredResult.data as Product[]);
+  const latestProducts = latestResult.error ? [] : (latestResult.data as Product[]);
+  const trendingProducts = trendingResult.error ? [] : (trendingResult.data as Product[]);
+  const collections = collectionsResult.error ? [] : (collectionsResult.data as Collection[]);
 
   return (
     <main className="min-h-screen flex flex-col bg-background">

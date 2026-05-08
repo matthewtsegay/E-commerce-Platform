@@ -1,38 +1,23 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Collection } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, Box, Loader2 } from 'lucide-react';
+import { ArrowRight, Box } from 'lucide-react';
 import Image from 'next/image';
-import { motion } from 'motion/react';
-import { api } from '@/lib/api-client';
-import { extractList, getApiErrorMessage } from '@/lib/api-helpers';
-import { toast } from 'sonner';
+import { serverApiFetch } from '@/lib/api-server';
 
-export default function CollectionsPage() {
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export const metadata = {
+  title: 'Collections | Nebi Store',
+  description: 'Explore our curated collections of premium fashion and lifestyle products.',
+};
 
-  useEffect(() => {
-    const fetchCollections = async () => {
-      setIsLoading(true);
-      try {
-        const response = await api.get('/store/collections/');
-        setCollections(extractList(response.data));
-      } catch (error: any) {
-        setCollections([]);
-        toast.error(getApiErrorMessage(error, 'Unable to load collections right now.'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
+export default async function CollectionsPage() {
+  const result = await serverApiFetch<Collection>('/store/collections/', { revalidate: 1800 }); // 30 min cache
 
-    fetchCollections();
-  }, []);
+  const collections = result.error ? [] : (result.data as Collection[]);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
@@ -48,48 +33,45 @@ export default function CollectionsPage() {
           </p>
         </div>
 
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24">
-            <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-            <p className="text-lg font-bold uppercase tracking-widest text-muted-foreground animate-pulse">Loading Collections...</p>
+        {result.error ? (
+          <div className="text-center py-24">
+            <div className="text-red-500 mb-4">⚠️ Unable to load collections</div>
+            <p className="text-muted-foreground">Please try again later.</p>
+          </div>
+        ) : collections.length === 0 ? (
+          <div className="text-center py-24">
+            <Box className="h-24 w-24 mx-auto text-muted-foreground mb-6" />
+            <h2 className="text-2xl font-bold mb-2">No Collections Available</h2>
+            <p className="text-muted-foreground">Check back soon for new collections.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {collections.map((collection, index) => (
-              <motion.div
+              <Link
                 key={collection.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
+                href={`/products?collection_id=${collection.id}`}
+                className="group relative overflow-hidden rounded-[40px] shadow-2xl h-[400px] transition-transform duration-300 hover:scale-[1.02]"
               >
-                <Link href={`/products?collection_id=${collection.id}`} className="group">
-                  <Card className="border-none shadow-2xl rounded-[40px] overflow-hidden bg-white/50 backdrop-blur-sm h-[400px] relative">
-                    <Image 
-                      src={`https://picsum.photos/seed/collection${collection.id}/1200/800`} 
-                      alt={collection.title}
-                      fill
-                      className="object-cover transition-transform duration-700 group-hover:scale-110 opacity-70"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    
-                    <CardContent className="absolute bottom-0 left-0 p-10 w-full text-white">
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-xs">
-                          <Box className="h-4 w-4" />
-                          {collection.products_count} ITEMS
-                        </div>
-                        <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-4 italic leading-none">{collection.title}</h2>
-                        <div className="flex items-center gap-3 font-bold group-hover:translate-x-2 transition-transform">
-                          EXPLORE COLLECTION
-                          <ArrowRight className="h-5 w-5 text-primary" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              </motion.div>
+                <Image
+                  fill
+                  src={`https://picsum.photos/seed/collection${collection.id}/800/600`}
+                  alt={collection.title}
+                  className="object-cover w-full h-full"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                <div className="absolute bottom-0 left-0 p-8">
+                  <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase mb-2">
+                    {collection.title}
+                  </h3>
+                  <p className="text-white/80 mb-4 line-clamp-2">
+                    {collection.products_count} premium products
+                  </p>
+                  <div className="flex items-center gap-2 text-primary font-bold">
+                    SHOP NOW <ArrowRight className="h-5 w-5" />
+                  </div>
+                </div>
+              </Link>
             ))}
           </div>
         )}

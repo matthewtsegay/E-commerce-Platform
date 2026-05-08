@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
@@ -46,6 +44,10 @@ export default function LatestProducts({
                 <div className="h-6 w-1/4 bg-white rounded-lg animate-pulse" />
               </div>
             ))
+          ) : products.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-muted-foreground">No latest products available at the moment.</p>
+            </div>
           ) : (
             products.map((product) => (
               <div key={product.id}>

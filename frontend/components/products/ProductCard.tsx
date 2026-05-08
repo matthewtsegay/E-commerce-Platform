@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Product } from '@/lib/types';
-import { motion } from 'motion/react';
 import { useCartActions } from '@/hooks/use-cart-actions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -67,14 +66,9 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      whileHover={{ y: -5 }}
-    >
+    <div className="group">
       <Card 
-        className="overflow-hidden h-full flex flex-col border-none shadow-lg bg-white/50 backdrop-blur-sm group cursor-pointer transition-all hover:shadow-xl"
+        className="overflow-hidden h-full flex flex-col border-none shadow-lg bg-white/50 backdrop-blur-sm group cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1"
         onClick={navigateToProduct}
       >
         <div className="relative aspect-square overflow-hidden bg-cream">
@@ -154,6 +148,6 @@ export default function ProductCard({ product }: ProductCardProps) {
           </Button>
         </CardFooter>
       </Card>
-    </motion.div>
+    </div>
   );
 }

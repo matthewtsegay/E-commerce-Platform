@@ -6,7 +6,6 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Package, ArrowRight, Home } from 'lucide-react';
-import { motion } from 'motion/react';
 import { useEffect, useState, useMemo } from 'react';
 import { api } from '@/lib/api-client';
 import { toast } from 'sonner';
@@ -48,17 +47,9 @@ export default function SuccessPage() {
       <Navbar />
       
       <main className="flex-grow flex items-center justify-center container mx-auto px-4 py-24">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-2xl w-full text-center space-y-8"
-        >
+        <div className="max-w-2xl w-full text-center space-y-8">
           <div className="relative mx-auto w-32 h-32 flex items-center justify-center">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1.5 }}
-              transition={{ delay: 0.2, duration: 0.5, type: 'spring' }}
+            <div
               className="absolute inset-0 bg-primary/20 rounded-full blur-2xl"
             />
             <CheckCircle2 className="h-24 w-24 text-primary relative z-10" />
@@ -107,7 +98,7 @@ export default function SuccessPage() {
           <p className="text-sm text-muted-foreground font-medium">
             A confirmation email has been sent to your registered address.
           </p>
-        </motion.div>
+        </div>
       </main>
 
       <Footer />
