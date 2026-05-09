@@ -15,6 +15,9 @@ import { cn } from '@/lib/utils';
 import StarRating from './StarRating';
 
 import { trackProductClick, trackAddToCart } from '@/lib/analytics';
+import { api } from '@/lib/api-client';
+import { formatEtb } from '@/lib/format-currency';
+import { getEffectiveUnitPrice } from '@/lib/product-price';
 
 interface ProductCardProps {
   product: Product;

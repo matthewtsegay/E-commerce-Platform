@@ -37,6 +37,7 @@ function ProductsContent() {
   const [sortBy, setSortBy] = useState('newest');
   const [isMounted, setIsMounted] = useState(false);
   const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
 
   useEffect(() => {

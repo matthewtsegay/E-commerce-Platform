@@ -104,7 +104,6 @@ export const useCart = create<CartState>()(
         set({ cart: { ...currentCart, items, total_price } });
       },
       clearCart: () => set({ cart: null }),
-      setLoading: (isLoading) => set({ isLoading }),
     }),
     {
       name: 'cart-storage',

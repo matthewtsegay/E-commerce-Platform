@@ -63,8 +63,8 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // Handle 401 - token refresh
-    if (error.response?.status === 401 && !originalRequest?._retry) {
-      originalRequest!._retry = true;
+    if (error.response?.status === 401 && !(originalRequest as any)?._retry) {
+      (originalRequest as any)._retry = true;
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
         try {

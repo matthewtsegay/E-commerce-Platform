@@ -116,6 +116,10 @@ export default function ProductDetailClient({
     }
   };
 
+  const effectivePrice = getEffectiveUnitPrice(product);
+  const isOnSale = product.is_on_sale && product.discounted_price;
+  const hasFreeShipping = effectivePrice >= FREE_SHIPPING_MIN_ETB;
+
   const handleImageMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isZoomed) return;
     const rect = e.currentTarget.getBoundingClientRect();
