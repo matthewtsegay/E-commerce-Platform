@@ -46,23 +46,11 @@ export default function ProductDetailClient({
   const [reviewText, setReviewText] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
   const [submittingReview, setSubmittingReview] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState(initialProduct.is_liked || false);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const reviewFormRef = useRef<HTMLFormElement>(null);
 
-  // Load user-specific data on mount
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        // Check if liked
-        const likeRes = await api.get(`/store/products/${product.id}/is_liked/`);
-        setIsLiked(likeRes.data.is_liked);
-      } catch (error) {
-        // Ignore errors for non-auth users
-      }
-    };
-    loadUserData();
-  }, [product.id]);
+
 
   const handleAddToCart = async () => {
     try {

@@ -82,6 +82,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-110"
               referrerPolicy="no-referrer"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">

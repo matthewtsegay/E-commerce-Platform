@@ -72,6 +72,7 @@ export default function CartPage() {
                             fill
                             className="object-cover"
                             referrerPolicy="no-referrer"
+                            sizes="(max-width: 768px) 96px, 128px"
                           />
                         </div>
                         
@@ -133,7 +134,7 @@ export default function CartPage() {
                 </div>
                 <h3 className="text-2xl font-bold uppercase mb-2">Your bag is empty</h3>
                 <p className="text-muted-foreground mb-8">Looks like you haven&apos;t added any style to your bag yet.</p>
-                <Button render={<Link href="/products" />} size="lg" className="h-14 px-8 font-bold rounded-2xl shadow-lg">
+                <Button render={<Link href="/products" />} nativeButton={false} size="lg" className="h-14 px-8 font-bold rounded-2xl shadow-lg">
                   START SHOPPING
                 </Button>
               </div>
@@ -167,7 +168,7 @@ export default function CartPage() {
                     <span className="text-3xl font-black text-primary">{formatEtb(total)}</span>
                   </div>
                   
-                  <Button className="w-full h-16 text-lg font-black shadow-xl rounded-2xl group" disabled={items.length === 0} render={<Link href="/checkout" />}>
+                  <Button className="w-full h-16 text-lg font-black shadow-xl rounded-2xl group" disabled={items.length === 0} nativeButton={false} render={<Link href="/checkout" />}>
                     PROCEED TO CHECKOUT
                     <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                   </Button>

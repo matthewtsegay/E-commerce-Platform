@@ -128,6 +128,7 @@ export default function OrdersPage() {
                                   fill 
                                   className="object-cover" 
                                   referrerPolicy="no-referrer"
+                                  sizes="80px"
                                />
                             </div>
                             <div className="flex-grow">

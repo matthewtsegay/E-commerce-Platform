@@ -92,7 +92,7 @@ export default async function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-[600px]">
                {collections.length > 0 && (
                  <Link href={`/products?collection_id=${collections[0].id}`} className="group h-full relative overflow-hidden rounded-[40px] shadow-2xl">
-                    <Image fill src="https://picsum.photos/seed/coll1/1200/800" alt={collections[0].title} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
+                    <Image fill src="https://picsum.photos/seed/coll1/1200/800" alt={collections[0].title} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" sizes="(max-width: 768px) 100vw, 50vw" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                     <div className="absolute bottom-0 left-0 p-12">
                        <h3 className="text-5xl font-black text-white italic tracking-tighter uppercase mb-4">{collections[0].title}</h3>
@@ -105,7 +105,7 @@ export default async function Home() {
                <div className="grid grid-rows-2 gap-8 h-full">
                   {collections.length > 1 && (
                     <Link href={`/products?collection_id=${collections[1].id}`} className="group relative overflow-hidden rounded-[40px] shadow-2xl">
-                       <Image fill src="https://picsum.photos/seed/coll2/1200/800" alt={collections[1].title} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
+                       <Image fill src="https://picsum.photos/seed/coll2/1200/800" alt={collections[1].title} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" sizes="50vw" />
                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                        <div className="absolute bottom-0 left-0 p-8">
                           <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase">{collections[1].title}</h3>
@@ -114,7 +114,7 @@ export default async function Home() {
                   )}
                   {collections.length > 2 && (
                     <Link href={`/products?collection_id=${collections[2].id}`} className="group relative overflow-hidden rounded-[40px] shadow-2xl">
-                       <Image fill src="https://picsum.photos/seed/coll3/1200/800" alt={collections[2].title} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
+                       <Image fill src="https://picsum.photos/seed/coll3/1200/800" alt={collections[2].title} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" sizes="50vw" />
                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                        <div className="absolute bottom-0 left-0 p-8">
                           <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase">{collections[2].title}</h3>

@@ -242,7 +242,7 @@ export default function CheckoutPage() {
                           {cart?.items.map((item) => (
                              <div key={item.product.id} className="flex gap-4">
                                 <div className="h-16 w-16 rounded-xl bg-muted border shrink-0 relative overflow-hidden">
-                                   <Image src={item.product.images[0]?.image} alt={item.product.title} fill className="object-cover" referrerPolicy="no-referrer" />
+                                   <Image src={item.product.images[0]?.image} alt={item.product.title} fill className="object-cover" referrerPolicy="no-referrer" sizes="64px" />
                                 </div>
                                 <div className="flex-grow flex flex-col justify-center">
                                    <h4 className="text-xs font-black uppercase leading-tight line-clamp-1">{item.product.title}</h4>

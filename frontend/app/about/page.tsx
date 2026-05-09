@@ -53,6 +53,7 @@ export default function AboutPage() {
                 fill 
                 className="object-cover"
                 referrerPolicy="no-referrer"
+                sizes="(max-width: 768px) 100vw, 50vw"
               />
             </div>
             <div className="space-y-8">
