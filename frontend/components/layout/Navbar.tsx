@@ -100,8 +100,9 @@ export default function Navbar() {
           {mounted && (
             <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
               <DialogTrigger
+                nativeButton={false}
                 render={
-                  <Button variant="ghost" size="icon" className="hidden sm:flex">
+                  <Button variant="ghost" size="icon">
                     <Search className="h-5 w-5" />
                   </Button>
                 }
@@ -146,6 +147,7 @@ export default function Navbar() {
           {mounted ? (
             <DropdownMenu>
               <DropdownMenuTrigger
+                nativeButton={false}
                 render={
                   <Button variant="ghost" size="icon">
                     <User className="h-5 w-5" />
@@ -224,6 +226,7 @@ export default function Navbar() {
           {mounted ? (
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger
+                nativeButton={false}
                 render={
                   <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
                     <Menu className="h-5 w-5" />

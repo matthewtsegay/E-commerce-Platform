@@ -40,6 +40,11 @@ function ProductsContent() {
   const [hasMore, setHasMore] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
 
+  // Set mounted flag to prevent hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   useEffect(() => {
     const fetchCollections = async () => {
       try {
@@ -62,10 +67,28 @@ function ProductsContent() {
     setSearch(urlSearch);
   }, [urlSearch]);
 
+  // Debounced URL sync for search
+  useEffect(() => {
+    const debounceId = setTimeout(() => {
+      if (search !== urlSearch) {
+        const params = new URLSearchParams();
+        if (search.trim()) {
+          params.set('search', search.trim());
+        }
+        if (collectionId) {
+          params.set('collection_id', collectionId);
+        }
+        const newUrl = params.toString() ? `/products?${params.toString()}` : '/products';
+        router.replace(newUrl);
+      }
+    }, 500);
+    return () => clearTimeout(debounceId);
+  }, [search, collectionId, router, urlSearch]);
+
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [collectionId, search, priceRange, sortBy]);
+  }, [collectionId, urlSearch, priceRange, sortBy]);
 
 
   useEffect(() => {
@@ -74,7 +97,7 @@ function ProductsContent() {
       try {
         const params: any = { 
           collection_id: collectionId || undefined,
-          search: search || undefined,
+          search: urlSearch || undefined,
           price__gt: priceRange[0] > 0 ? priceRange[0] : undefined,
           price__lt: priceRange[1] < priceBounds.max ? priceRange[1] : undefined,
           page: page,
@@ -102,9 +125,8 @@ function ProductsContent() {
       }
     };
 
-    const debounceId = setTimeout(fetchProducts, 500);
-    return () => clearTimeout(debounceId);
-  }, [collectionId, search, priceRange, sortBy, page, priceBounds.max]);
+    fetchProducts();
+  }, [collectionId, urlSearch, priceRange, sortBy, page, priceBounds.max]);
 
 
   const filteredProducts = products; // Already filtered by backend
@@ -124,14 +146,7 @@ function ProductsContent() {
           </div>
 
           <div className="flex w-full md:w-auto items-center gap-2">
-            <form onSubmit={(event) => {
-              event.preventDefault();
-              if (search.trim()) {
-                router.push(`/products?search=${encodeURIComponent(search.trim())}`);
-                return;
-              }
-              router.push('/products');
-            }} className="relative flex-grow md:w-80">
+            <div className="relative flex-grow md:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
                 placeholder="Search products..." 
@@ -139,14 +154,13 @@ function ProductsContent() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
-              <button type="submit" className="sr-only">Search</button>
-            </form>
+            </div>
             
             {isMounted ? (
 
               <Sheet>
                 <SheetTrigger
-                  nativeButton={true}
+                  nativeButton={false}
                   render={
                     <Button variant="outline" size="icon" className="h-12 w-12 shrink-0 border-2">
                       <SlidersHorizontal className="h-5 w-5" />

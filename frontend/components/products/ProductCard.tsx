@@ -100,7 +100,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             variant="ghost"
             size="icon"
             onClick={handleLikeToggle}
-            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/80 hover:bg-white text-foreground shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/80 hover:bg-white text-foreground shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
           >
             <Heart className={`h-4 w-4 ${isLiked ? 'fill-destructive text-destructive' : ''}`} />
           </Button>

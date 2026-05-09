@@ -65,15 +65,9 @@ export default function ProductDetailClient({
     if (isLikeLoading) return;
     setIsLikeLoading(true);
     try {
-      if (isLiked) {
-        await api.delete(`/store/products/${product.id}/like/`);
-        setIsLiked(false);
-        setProduct(prev => prev ? { ...prev, total_likes: prev.total_likes - 1 } : prev);
-      } else {
-        await api.post(`/store/products/${product.id}/like/`);
-        setIsLiked(true);
-        setProduct(prev => prev ? { ...prev, total_likes: prev.total_likes + 1 } : prev);
-      }
+      const response = await api.post(`/store/products/${product.id}/likes/`);
+      setIsLiked(response.data.liked);
+      setProduct(prev => prev ? { ...prev, total_likes: response.data.total_likes } : prev);
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to update like'));
     } finally {
