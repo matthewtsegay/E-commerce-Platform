@@ -1,14 +1,15 @@
 from .common import *
+import dj_database_url
 
 DEBUG = False
 
 SECRET_KEY = env('SECRET_KEY')
 
 # Strictly define ALLOWED_HOSTS from environment variables
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 
 DATABASES = {
-    'default': env.db('DATABASE_URL')
+    'default': dj_database_url.parse(env('DATABASE_URL'))
 }
 
 # Ensure connection pooling is active

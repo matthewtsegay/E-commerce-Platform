@@ -49,7 +49,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    # 'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -166,7 +166,7 @@ STORAGES = {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
 
@@ -222,16 +222,20 @@ DJOSER ={
 AUTH_USER_MODEL= 'core.User'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = env('EMAIL_HOST', default='localhost')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
-EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
-EMAIL_PORT = env.int('EMAIL_PORT', default=2525)
+EMAIL_HOST = env('EMAIL_HOST')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+EMAIL_PORT = env.int('EMAIL_PORT', default=587)
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='admin@ecommerce.com')
 
 ADMINS = [
     (env('ADMIN_NAME', default='Admin'), env('ADMIN_EMAIL', default='admin@ecommerce.com'))
 ]
-CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/1')
+
+CELERY_BROKER_URL = env('REDIS_URL')
+CELERY_RESULT_BACKEND = env('REDIS_URL')
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
 CELERY_BEAT_SCHEDULE = {
     'notify_customers':{
         'task':'playground.tasks.notify_customers',
@@ -243,13 +247,12 @@ CELERY_BEAT_SCHEDULE = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": env('REDIS_URL', default='redis://127.0.0.1:6379/2'),
+        "LOCATION": env('REDIS_URL'),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
     }
 }
-#CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
 LOGGING = {
     
