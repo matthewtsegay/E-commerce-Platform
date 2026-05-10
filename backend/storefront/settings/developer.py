@@ -24,6 +24,8 @@ CACHES = {
     }
 }
 
+# Media storage is now handled globally in common.py using STORAGES
+
 # INSTALLED_APPS += [
 #     'silk',
 #     'debug_toolbar',
@@ -43,3 +45,12 @@ DOMAIN = 'localhost:3000'
 DJOSER['DOMAIN'] = DOMAIN
 DJOSER['PROTOCOL'] = 'http'
 DJOSER['SITE_NAME'] = 'Nebi Store'
+
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}

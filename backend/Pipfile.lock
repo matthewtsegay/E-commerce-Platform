@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "ea24ef39e70887ff8e057be8054b06920a9d880f5d238601a376d089555541d7"
+            "sha256": "221420f05fb9d2607957ec9aa0ac42bd6c6988b33abbb14cbceef60e716e4ba5"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -321,6 +321,14 @@
             "markers": "python_version >= '3.6'",
             "version": "==0.3.0"
         },
+        "cloudinary": {
+            "hashes": [
+                "sha256:6624d06014c33f50c0c9e740fde1dfe4579d03311025d8bb7183824b7443aa09",
+                "sha256:bc9139c68f2ef6996ba62a5d0300e63c711d4f6564644c0c82aa31bf641ef3c7"
+            ],
+            "index": "pip_conf_index_global",
+            "version": "==1.44.2"
+        },
         "colorama": {
             "hashes": [
                 "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44",
@@ -494,6 +502,14 @@
             ],
             "markers": "python_version >= '3.12'",
             "version": "==6.0.4"
+        },
+        "django-cloudinary-storage": {
+            "hashes": [
+                "sha256:95c855c7334141b2a485ea7eb5716de87bb6ce0d848e205debb3a3ab7bbbd49a",
+                "sha256:debd403a5f225c9d35c4af508ff4abc7fdc262129464134b60b2feeb2c44d3e1"
+            ],
+            "index": "pip_conf_index_global",
+            "version": "==0.3.0"
         },
         "django-cors-headers": {
             "hashes": [
@@ -1639,11 +1655,11 @@
         },
         "urllib3": {
             "hashes": [
-                "sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed",
-                "sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4"
+                "sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c",
+                "sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897"
             ],
-            "markers": "python_version >= '3.9'",
-            "version": "==2.6.3"
+            "markers": "python_version >= '3.10'",
+            "version": "==2.7.0"
         },
         "vine": {
             "hashes": [

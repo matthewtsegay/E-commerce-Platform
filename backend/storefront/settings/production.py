@@ -29,3 +29,5 @@ CSRF_COOKIE_SAMESITE = "Lax"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+
+# Media storage is now handled globally in common.py using STORAGES

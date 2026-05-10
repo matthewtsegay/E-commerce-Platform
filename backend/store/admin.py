@@ -79,6 +79,7 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = ('is_on_sale', 'discount_active', 'discount_type', 'collection')
     search_fields = ('title', 'description', 'discount_label')
     readonly_fields = ('discounted_price_display',)
+    prepopulated_fields = {'slug': ['title']}
     list_editable = ['price']
     list_per_page = 10
     list_select_related = ['collection']

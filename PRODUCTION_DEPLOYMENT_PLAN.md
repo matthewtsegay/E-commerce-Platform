@@ -44,6 +44,9 @@ Configure these in your hosting provider's dashboard:
 | `ALLOWED_HOSTS` | `api.yourdomain.com` |
 | `CORS_ALLOWED_ORIGINS` | `https://yourdomain.com` |
 | `SECURE_SSL_REDIRECT` | `True` |
+| `CLOUDINARY_CLOUD_NAME` | Your Cloudinary Cloud Name |
+| `CLOUDINARY_API_KEY` | Your Cloudinary API Key |
+| `CLOUDINARY_API_SECRET` | Your Cloudinary API Secret |
 
 ### C. Backend Deployment Steps
 1.  **Code Preparation**:
