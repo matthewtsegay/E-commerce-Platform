@@ -1,9 +1,17 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import io, base64
-from store.models import Order,OrderItem
+from store.models import Order, OrderItem
+import io
+import base64
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_sales_data():
+    try:
+        import pandas as pd
+    except ImportError:
+        logger.error("Pandas not installed. Sales data collection failed.")
+        return None
+
     items = OrderItem.objects.select_related("order").values(
         "order__placed_at", "quantity", "unit_price"
     )
@@ -19,12 +27,23 @@ def get_sales_data():
 
 
 def analyze_sales(df):
+    if df is None:
+        return None, None
     daily_sales = df.groupby(df["order__placed_at"].dt.date)["total_price"].sum()
     moving_avg = daily_sales.rolling(window=7).mean()
     return daily_sales, moving_avg
 
 
 def plot_sales(daily_sales, moving_avg, as_base64=True):
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        logger.error("Matplotlib not installed. Sales plotting failed.")
+        return None
+
+    if daily_sales is None or moving_avg is None:
+        return None
+
     plt.figure(figsize=(10,5))
     plt.plot(daily_sales.index, daily_sales.values, label="Daily Sales")
     plt.plot(moving_avg.index, moving_avg.values, linestyle="--", label="7-day Average")

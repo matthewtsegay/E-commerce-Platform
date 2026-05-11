@@ -30,6 +30,7 @@ psycopg2-binary = "*"
 djoser = "*"
 cloudinary = "*"
 django-cloudinary-storage = "*"
+pandas = "*"
 
 [dev-packages]
 pytest-django = "*"
