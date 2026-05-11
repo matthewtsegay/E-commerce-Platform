@@ -166,17 +166,17 @@ STORAGES = {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.StaticFilesStorage",
     },
 }
 
-# Prevent WhiteNoise from crashing if a static file referenced in CSS is missing
-WHITENOISE_MANIFEST_STRICT = False
-
-
-# Legacy settings for compatibility with django-cloudinary-storage
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+# Legacy settings for compatibility
+STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+# WhiteNoise settings
+WHITENOISE_MANIFEST_STRICT = False
+WHITENOISE_KEEP_ONLY_HASHED_FILES = False
 
 
 # Default primary key field type
