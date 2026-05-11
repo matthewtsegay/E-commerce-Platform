@@ -8,6 +8,6 @@ python manage.py collectstatic --noinput
 
 python manage.py migrate
 
-python manage.py createsuperuser --noinput || true
+# python manage.py createsuperuser --noinput || true
 
-python manage.py loaddata data_dump.json || true
+python manage.py loaddata fixtures/data.json || true
