@@ -54,3 +54,8 @@ STORAGES = {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
+
+# Legacy settings for compatibility with django-cloudinary-storage
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+print("CLOUDINARY KEY:", env("CLOUDINARY_API_KEY"))
