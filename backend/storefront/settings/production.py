@@ -1,34 +1,55 @@
 from .common import *
-import dj_database_url
 
+# ========================
+# CORE SETTINGS
+# ========================
 DEBUG = False
 
-SECRET_KEY = env('SECRET_KEY')
+SECRET_KEY = env("SECRET_KEY")
 
-# Strictly define ALLOWED_HOSTS from environment variables
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
+# ========================
+# DATABASE
+# ========================
 DATABASES = {
-    'default': dj_database_url.parse(env('DATABASE_URL'))
+    "default": env.db("DATABASE_URL")
 }
 
-# Ensure connection pooling is active
-DATABASES['default']['CONN_MAX_AGE'] = 600
-DATABASES['default']['CONN_HEALTH_CHECKS'] = True
+DATABASES["default"]["CONN_MAX_AGE"] = 600
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
-# Security settings
-SECURE_HSTS_SECONDS = 31536000 # 1 year
+# ========================
+# SECURITY SETTINGS
+# ========================
+SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
-SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
+
+SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 
-# Let Django treat proxied HTTPS requests as secure when behind a reverse proxy.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+# ========================
+# EMAIL CONFIGURATION
+# ========================
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-# Media storage is now handled globally in common.py using STORAGES
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+
+EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL",
+    default="no-reply@ecommerce.com"
+)
