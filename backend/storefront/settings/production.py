@@ -20,20 +20,17 @@ DATABASES["default"]["CONN_MAX_AGE"] = 600
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
 # ========================
-# STORAGE (CLOUDINARY)
+# STORAGE (Whitenoise + Cloudinary)
 # ========================
-# Compatibility line for django-cloudinary-storage
-STATICFILES_STORAGE = "cloudinary_storage.storage.StaticCloudinaryStorage"
-
-DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
-
 # Storage configuration for Django 4.2+
+# We use Whitenoise for static files (standard for Render) 
+# and Cloudinary for media (images/uploads).
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "cloudinary_storage.storage.StaticCloudinaryStorage",
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
 
