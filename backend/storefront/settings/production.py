@@ -20,6 +20,43 @@ DATABASES["default"]["CONN_MAX_AGE"] = 600
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
 # ========================
+# STORAGE (CLOUDINARY)
+# ========================
+# Compatibility line for django-cloudinary-storage
+STATICFILES_STORAGE = "cloudinary_storage.storage.StaticCloudinaryStorage"
+
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+# Storage configuration for Django 4.2+
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "cloudinary_storage.storage.StaticCloudinaryStorage",
+    },
+}
+
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": env("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": env("CLOUDINARY_API_KEY"),
+    "API_SECRET": env("CLOUDINARY_API_SECRET"),
+}
+
+# ========================
+# REDIS / CACHE
+# ========================
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": env("REDIS_URL"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+# ========================
 # SECURITY SETTINGS
 # ========================
 SECURE_HSTS_SECONDS = 31536000  # 1 year
