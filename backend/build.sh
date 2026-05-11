@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# exit on error
+# Exit immediately on any error so Render marks the build as failed
 set -o errexit
 
-# Install dependencies
+# Upgrade pip and install all dependencies from requirements.txt
 pip install --upgrade pip
-pip install pipenv
-pipenv install --deploy --system
+pip install -r requirements.txt
 
-# Convert static asset files
-# We ensure the static directory exists before running collectstatic
-mkdir -p static
-python manage.py collectstatic --no-input
+# Ensure the staticfiles output directory exists before collectstatic runs
+mkdir -p staticfiles
+
+# Collect all static assets (admin, DRF, app static files) into staticfiles/
+python manage.py collectstatic --noinput
 
 # Apply any outstanding database migrations
 python manage.py migrate

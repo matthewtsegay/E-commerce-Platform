@@ -2,7 +2,7 @@
 {% load static %}
 {% block content %}
     <div class="home-page">
-       <a href="{% static 'store:store' %}">
+       <a href="{% url 'store:api-root' %}">
         <button class="store-btn btn-danger">Store</button>
        </a>
        <img src="{% static 'core/logo.jpg' %}" alt="logo" class="logo">

@@ -46,16 +46,5 @@ DJOSER['DOMAIN'] = DOMAIN
 DJOSER['PROTOCOL'] = 'http'
 DJOSER['SITE_NAME'] = 'Nebi Store'
 
-STORAGES = {
-    "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
-
-# Legacy settings for compatibility with django-cloudinary-storage
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
-DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
-print("CLOUDINARY KEY:", env("CLOUDINARY_API_KEY"))
+# developer.py inherits STORAGES from common.py (plain Django StaticFilesStorage)
+# No legacy STATICFILES_STORAGE override needed in Django 4.2+

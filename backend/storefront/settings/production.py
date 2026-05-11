@@ -20,11 +20,13 @@ DATABASES["default"]["CONN_MAX_AGE"] = 600
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
 # ========================
-# STORAGE (Whitenoise + Cloudinary)
+# STORAGE (WhiteNoise for static, Cloudinary for media)
 # ========================
-# Storage configuration for Django 4.2+
-# We use Whitenoise for static files (standard for Render) 
-# and Cloudinary for media (images/uploads).
+# CompressedManifestStaticFilesStorage adds:
+#   - Gzip/Brotli compression of each static file
+#   - Content-hash in filenames for long-lived cache headers
+# WHITENOISE_MANIFEST_STRICT=False stops crashes if a CSS url() points at
+# a file that was removed (e.g. older Django admin SVGs).
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
@@ -34,13 +36,11 @@ STORAGES = {
     },
 }
 
-# Legacy settings for compatibility
+WHITENOISE_MANIFEST_STRICT = False
+
+# Legacy attr for django-cloudinary-storage compatibility (reads this directly)
 STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
-
-# Prevent WhiteNoise from crashing during build
-WHITENOISE_MANIFEST_STRICT = False
-WHITENOISE_KEEP_ONLY_HASHED_FILES = False
 
 CLOUDINARY_STORAGE = {
     "CLOUD_NAME": env("CLOUDINARY_CLOUD_NAME"),
