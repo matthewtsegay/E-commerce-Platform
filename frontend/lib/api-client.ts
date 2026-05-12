@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { clearAuthCookies } from './auth';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? (process.env.NODE_ENV !== 'production' ? 'http://localhost:8000/api/v1' : '');
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export const api = axios.create({
   baseURL: BASE_URL,

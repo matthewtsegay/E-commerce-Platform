@@ -18,21 +18,14 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'http',
-        hostname: '127.0.0.1',
-        port: '8000',
-        pathname: '/media/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '8000',
-        pathname: '/media/**',
-      },
-      // Production backend image serving
-      {
         protocol: 'https',
-        hostname: process.env.NEXT_PUBLIC_API_HOSTNAME || 'api.example.com',
+        hostname: process.env.NEXT_PUBLIC_API_HOSTNAME || (() => {
+          try {
+            return new URL(process.env.NEXT_PUBLIC_API_URL || 'https://api.example.com').hostname;
+          } catch {
+            return 'api.example.com';
+          }
+        })(),
         pathname: '/media/**',
       },
       // Cloudinary image serving

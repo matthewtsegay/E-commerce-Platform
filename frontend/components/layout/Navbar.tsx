@@ -82,9 +82,7 @@ export default function Navbar() {
   // Helper for Django Admin URL
   const backendAdminUrl = process.env.NEXT_PUBLIC_API_URL
     ? process.env.NEXT_PUBLIC_API_URL.replace('/api/v1', '/admin/')
-    : process.env.NODE_ENV !== 'production'
-      ? 'http://localhost:8000/admin/'
-      : '/admin/';
+    : '/admin/';
 
   const handleLogout = () => {
     logout();
