@@ -1,17 +1,56 @@
 from .common import *
 
-# ========================
+# =========================================================
 # CORE SETTINGS
-# ========================
+# =========================================================
+
 DEBUG = False
 
 SECRET_KEY = env("SECRET_KEY")
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
-# ========================
+# =========================================================
+# ALLOWED HOSTS
+# =========================================================
+
+ALLOWED_HOSTS = env.list(
+    "ALLOWED_HOSTS",
+    default=[
+        "nebi-store-backend-prod.onrender.com",
+        "localhost",
+        "127.0.0.1",
+    ]
+)
+
+
+# =========================================================
+# CORS SETTINGS
+# =========================================================
+
+CORS_ALLOWED_ORIGINS = env.list(
+    "CORS_ALLOWED_ORIGINS",
+    default=[
+        "https://e-commerce-platform-tawny.vercel.app",
+    ]
+)
+
+
+# =========================================================
+# CSRF SETTINGS
+# =========================================================
+
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+    default=[
+        "https://e-commerce-platform-tawny.vercel.app",
+    ]
+)
+
+
+# =========================================================
 # DATABASE
-# ========================
+# =========================================================
+
 DATABASES = {
     "default": env.db("DATABASE_URL")
 }
@@ -19,28 +58,46 @@ DATABASES = {
 DATABASES["default"]["CONN_MAX_AGE"] = 600
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
-# ========================
-# STORAGE (WhiteNoise for static, Cloudinary for media)
-# ========================
-# CompressedManifestStaticFilesStorage adds:
-#   - Gzip/Brotli compression of each static file
-#   - Content-hash in filenames for long-lived cache headers
-# WHITENOISE_MANIFEST_STRICT=False stops crashes if a CSS url() points at
-# a file that was removed (e.g. older Django admin SVGs).
+
+# =========================================================
+# STORAGE SETTINGS
+# WhiteNoise -> Static Files
+# Cloudinary -> Media Files
+# =========================================================
+
 STORAGES = {
+    # Media uploads storage
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
+
+    # Static files storage
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.StaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
 
+
+# =========================================================
+# WHITENOISE SETTINGS
+# =========================================================
+
+# Prevent deployment crashes if referenced static files are missing
 WHITENOISE_MANIFEST_STRICT = False
 
-# Legacy attr for django-cloudinary-storage compatibility (reads this directly)
-STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
-DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+# Legacy compatibility for some third-party packages
+STATICFILES_STORAGE = (
+    "whitenoise.storage.CompressedManifestStaticFilesStorage"
+)
+
+DEFAULT_FILE_STORAGE = (
+    "cloudinary_storage.storage.MediaCloudinaryStorage"
+)
+
+
+# =========================================================
+# CLOUDINARY SETTINGS
+# =========================================================
 
 CLOUDINARY_STORAGE = {
     "CLOUD_NAME": env("CLOUDINARY_CLOUD_NAME"),
@@ -48,9 +105,11 @@ CLOUDINARY_STORAGE = {
     "API_SECRET": env("CLOUDINARY_API_SECRET"),
 }
 
-# ========================
-# REDIS / CACHE
-# ========================
+
+# =========================================================
+# REDIS / CACHE SETTINGS
+# =========================================================
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -61,35 +120,67 @@ CACHES = {
     }
 }
 
-# ========================
+
+# =========================================================
 # SECURITY SETTINGS
-# ========================
+# =========================================================
+
+# HTTPS / HSTS
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+# Redirect all HTTP traffic to HTTPS
+SECURE_SSL_REDIRECT = env.bool(
+    "SECURE_SSL_REDIRECT",
+    default=True
+)
 
+# Secure cookies
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
+# Cookie behavior
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# Required for Render / reverse proxy HTTPS handling
+SECURE_PROXY_SSL_HEADER = (
+    "HTTP_X_FORWARDED_PROTO",
+    "https"
+)
 
-# ========================
-# EMAIL CONFIGURATION
-# ========================
+
+# =========================================================
+# EMAIL SETTINGS
+# =========================================================
+
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_TLS = env.bool(
+    "EMAIL_USE_TLS",
+    default=True
+)
 
-EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
-EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST = env(
+    "EMAIL_HOST",
+    default="smtp.gmail.com"
+)
 
-EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_PORT = env.int(
+    "EMAIL_PORT",
+    default=587
+)
+
+EMAIL_HOST_USER = env(
+    "EMAIL_HOST_USER",
+    default=""
+)
+
+EMAIL_HOST_PASSWORD = env(
+    "EMAIL_HOST_PASSWORD",
+    default=""
+)
 
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL",

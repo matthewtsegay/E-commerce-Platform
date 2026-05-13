@@ -1,303 +1,416 @@
-import environ
 import os
 from pathlib import Path
 from datetime import timedelta
-from celery.schedules import crontab
+
 import cloudinary
+import environ
+
+from celery.schedules import crontab
+
+
+# =========================================================
+# BASE DIRECTORY
+# =========================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# Initialize environment variables
+
+# =========================================================
+# ENVIRONMENT VARIABLES
+# =========================================================
+
 env = environ.Env(
-    # set casting, default value
-    DEBUG=(bool, False)
+    DEBUG=(bool, False),
 )
 
-# Reading .env file
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
-
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
-
-DOMAIN = env('DOMAIN', default='localhost:3000')
-SITE_NAME = 'Nebi Store'
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 
-# Application definition
+# =========================================================
+# PROJECT SETTINGS
+# =========================================================
+
+DOMAIN = env("DOMAIN", default="localhost:3000")
+SITE_NAME = "Nebi Store"
+
+
+# =========================================================
+# INSTALLED APPLICATIONS
+# =========================================================
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'cloudinary_storage',
-    'cloudinary',
-    'rest_framework_simplejwt.token_blacklist',
-    'djoser',
+    # Django Apps
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+
+    # Third-Party Apps
     "corsheaders",
-    'django_filters',
-    'drf_spectacular',
-    'rest_framework',
-    'store.apps.StoreConfig',
-    'analytics.apps.AnalyticsConfig',
-    'tags.apps.TagsConfig',
-    'likes.apps.LikesConfig',
-    'core.apps.CoreConfig',
+    "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
+    "django_filters",
+    "drf_spectacular",
+    "djoser",
+    "cloudinary",
+    "cloudinary_storage",
+
+    # Local Apps
+    "store.apps.StoreConfig",
+    "analytics.apps.AnalyticsConfig",
+    "tags.apps.TagsConfig",
+    "likes.apps.LikesConfig",
+    "core.apps.CoreConfig",
 ]
+
+
+# =========================================================
+# MIDDLEWARE
+# =========================================================
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'core.middleware.JWTToSessionMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "core.middleware.JWTToSessionMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-if env('DEBUG'):
-    pass
-    
-    
+
+# =========================================================
+# INTERNAL IPS
+# =========================================================
+
 INTERNAL_IPS = [
-    # ...
     "127.0.0.1",
-    # ...
 ]
 
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-])
 
-ROOT_URLCONF = 'storefront.urls'
+# =========================================================
+# URLS & WSGI
+# =========================================================
+
+ROOT_URLCONF = "storefront.urls"
+
+WSGI_APPLICATION = "storefront.wsgi.application"
+
+
+# =========================================================
+# TEMPLATES
+# =========================================================
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, "templates")],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [os.path.join(BASE_DIR, "templates")],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'storefront.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+# =========================================================
+# PASSWORD VALIDATION
+# =========================================================
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
+# =========================================================
+# INTERNATIONALIZATION
+# =========================================================
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
 USE_TZ = True
 
 
-# =============================================================================
+# =========================================================
 # STATIC FILES
-# STATIC_ROOT = where collectstatic dumps everything (served by WhiteNoise)
-# Do NOT add STATIC_ROOT to STATICFILES_DIRS – that causes a crash
-# =============================================================================
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # separate from source static/
+# =========================================================
 
-# Extra directories Django's staticfiles finder should search
-# (your per-app static/ folders are found automatically via APP_DIRS finders)
+STATIC_URL = "/static/"
+
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
 STATICFILES_DIRS = []
 
-# =============================================================================
-# MEDIA FILES – Cloudinary handles ONLY media, never static
-# =============================================================================
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Cloudinary SDK & storage config (media only)
+# =========================================================
+# MEDIA FILES
+# =========================================================
+
+MEDIA_URL = "/media/"
+
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+
+# =========================================================
+# CLOUDINARY CONFIGURATION
+# =========================================================
+
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': env('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': env('CLOUDINARY_API_KEY'),
-    'API_SECRET': env('CLOUDINARY_API_SECRET'),
+    "CLOUD_NAME": env("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": env("CLOUDINARY_API_KEY"),
+    "API_SECRET": env("CLOUDINARY_API_SECRET"),
 }
+
 cloudinary.config(
-    cloud_name=env('CLOUDINARY_CLOUD_NAME'),
-    api_key=env('CLOUDINARY_API_KEY'),
-    api_secret=env('CLOUDINARY_API_SECRET'),
-    secure=True
+    cloud_name=env("CLOUDINARY_CLOUD_NAME"),
+    api_key=env("CLOUDINARY_API_KEY"),
+    api_secret=env("CLOUDINARY_API_SECRET"),
+    secure=True,
 )
 
-# =============================================================================
-# STORAGE BACKENDS (Django 4.2+ STORAGES dict – no legacy overrides needed)
-# Production overrides staticfiles backend in production.py
-# =============================================================================
+
+# =========================================================
+# STORAGE CONFIGURATION
+# =========================================================
+
 STORAGES = {
-    # Media uploads → Cloudinary
+    # Media Files
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
-    # Static files → plain Django in base; production.py upgrades to WhiteNoise
+
+    # Static Files
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
-# django-cloudinary-storage reads settings.STATICFILES_STORAGE directly in
-# its custom collectstatic command override (a bug in older versions).
-# These legacy attrs keep it from crashing on Django 4.2+ where they no
-# longer exist by default. Production overrides them in production.py.
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
-DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+STATICFILES_STORAGE = (
+    "django.contrib.staticfiles.storage.StaticFilesStorage"
+)
+
+DEFAULT_FILE_STORAGE = (
+    "cloudinary_storage.storage.MediaCloudinaryStorage"
+)
 
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+# =========================================================
+# DEFAULT PRIMARY KEY
+# =========================================================
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# =========================================================
+# DJANGO REST FRAMEWORK
+# =========================================================
 
 REST_FRAMEWORK = {
-    'COERCE_DECIMAL_TO_STRING': False,
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
+    "COERCE_DECIMAL_TO_STRING": False,
+
+    "DEFAULT_SCHEMA_CLASS": (
+        "drf_spectacular.openapi.AutoSchema"
     ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ),
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle'
+
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ),
+
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
     ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-        'user': '1000/day'
-    }
+
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/day",
+        "user": "1000/day",
+    },
 }
+
+
+# =========================================================
+# SIMPLE JWT
+# =========================================================
 
 SIMPLE_JWT = {
-    # Use a single auth header type to keep OpenAPI schema unambiguous.
-    'AUTH_HEADER_TYPES': ('JWT',),
-    # Short-lived access tokens for better security (applies to users and admins)
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    # Longer-lived refresh tokens with rotation and blacklisting
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    "AUTH_HEADER_TYPES": ("JWT",),
+
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+
+    "ROTATE_REFRESH_TOKENS": True,
+
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 
-DJOSER ={
-    'SERIALIZERS':{
-        'user_create':'core.serializers.UserCreateSerializer',
-        'current_user':'core.serializers.UserSerializer',
-        'user': 'core.serializers.UserSerializer',
+# =========================================================
+# DJOSER CONFIGURATION
+# =========================================================
+
+DJOSER = {
+    "SERIALIZERS": {
+        "user_create": "core.serializers.UserCreateSerializer",
+        "current_user": "core.serializers.UserSerializer",
+        "user": "core.serializers.UserSerializer",
     },
-    'PASSWORD_RESET_CONFIRM_URL': 'reset/{uid}/{token}',
-    'DOMAIN': env('DOMAIN', default='localhost:3000'),
-    'SITE_NAME': env('SITE_NAME', default='Nebi Store'),
+
+    "PASSWORD_RESET_CONFIRM_URL": "reset/{uid}/{token}",
+
+    "DOMAIN": DOMAIN,
+
+    "SITE_NAME": SITE_NAME,
 }
 
-AUTH_USER_MODEL= 'core.User'
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = env('EMAIL_HOST')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
-EMAIL_HOST_USER = env('EMAIL_HOST_USER')
-EMAIL_PORT = env.int('EMAIL_PORT', default=587)
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='admin@ecommerce.com')
+# =========================================================
+# CUSTOM USER MODEL
+# =========================================================
+
+AUTH_USER_MODEL = "core.User"
+
+
+# =========================================================
+# EMAIL CONFIGURATION
+# =========================================================
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+EMAIL_HOST = env("EMAIL_HOST")
+
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL",
+    default="admin@ecommerce.com",
+)
 
 ADMINS = [
-    (env('ADMIN_NAME', default='Admin'), env('ADMIN_EMAIL', default='admin@ecommerce.com'))
+    (
+        env("ADMIN_NAME", default="Admin"),
+        env("ADMIN_EMAIL", default="admin@ecommerce.com"),
+    )
 ]
 
-CELERY_BROKER_URL = env('REDIS_URL')
-CELERY_RESULT_BACKEND = env('REDIS_URL')
+
+# =========================================================
+# CELERY CONFIGURATION
+# =========================================================
+
+CELERY_BROKER_URL = env("REDIS_URL")
+
+CELERY_RESULT_BACKEND = env("REDIS_URL")
+
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 CELERY_BEAT_SCHEDULE = {
-    'notify_customers':{
-        'task':'playground.tasks.notify_customers',
-        'schedule': crontab(hour=7, minute=30),
-        'args':['hello world']
+    "notify_customers": {
+        "task": "playground.tasks.notify_customers",
+        "schedule": crontab(hour=7, minute=30),
+        "args": ["hello world"],
     }
 }
+
+
+# =========================================================
+# CACHE CONFIGURATION
+# =========================================================
 
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": env('REDIS_URL'),
+
+        "LOCATION": env("REDIS_URL"),
+
         "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
+            "CLIENT_CLASS": (
+                "django_redis.client.DefaultClient"
+            ),
+        },
     }
 }
+
+
+# =========================================================
+# LOGGING CONFIGURATION
+# =========================================================
 
 LOGGING = {
-    
-    'version':1,
-    'disable_existing_loggers': False,
-    'handlers':{
-         'console':{
-             'class':'logging.StreamHandler',
-             },
-         'file':{
-             'class': 'logging.handlers.RotatingFileHandler',
-             'filename': 'general.log',
-             'maxBytes': 1024 * 1024 * 10, # 10 MB
-             'backupCount': 5,
-             'formatter': 'verbose'
-         }
-    },
-    'loggers':{
-        '':{
-            'handlers':['console','file'],
-            'level': env('DJANGO_LOG_LEVEL', default='INFO')
-        }
-    },
-    'formatters':{
-        'verbose':{
-            'format':'{asctime}({levelname}-{name} - {message})',
-            'style':'{'
-        }
-    }
-}
+    "version": 1,
 
+    "disable_existing_loggers": False,
+
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+
+            "filename": "general.log",
+
+            "maxBytes": 1024 * 1024 * 10,
+
+            "backupCount": 5,
+
+            "formatter": "verbose",
+        },
+    },
+
+    "loggers": {
+        "": {
+            "handlers": ["console", "file"],
+
+            "level": env(
+                "DJANGO_LOG_LEVEL",
+                default="INFO",
+            ),
+        }
+    },
+
+    "formatters": {
+        "verbose": {
+            "format": (
+                "{asctime} ({levelname}) "
+                "{name} - {message}"
+            ),
+
+            "style": "{",
+        }
+    },
+}
