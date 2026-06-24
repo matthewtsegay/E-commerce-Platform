@@ -60,6 +60,22 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         return bool(effective.intersection({"admin"}))
     
     
+class DenyStaffForCustomerWrites(permissions.BasePermission):
+    """
+    Staff users manage the store via admin interfaces; block them from
+    customer cart mutations.
+    """
+
+    message = "Staff users cannot perform customer shopping actions."
+
+    def has_permission(self, request, view):
+        user = getattr(request, "user", None)
+        if user and user.is_authenticated and getattr(user, "is_staff", False):
+            if request.method not in permissions.SAFE_METHODS:
+                return False
+        return True
+
+
 class ViewCustomerHistoryPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         user = getattr(request, "user", None)

@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { useCart } from '@/lib/store';
+import { useCart, useAuth } from '@/lib/store';
+import { isAdminRole } from '@/lib/roles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Truck, Gift, Loader2 } from 'lucide-react';
@@ -14,8 +16,16 @@ import { formatEtb } from '@/lib/format-currency';
 import { computeShippingEtb, FREE_SHIPPING_MIN_ETB } from '@/lib/shipping';
 
 export default function CartPage() {
+  const router = useRouter();
+  const user = useAuth((state) => state.user);
   const { cart, removeItem, updateQuantity, setLoading, isLoading } = useCart();
   const [optimisticUpdates, setOptimisticUpdates] = useState<{[key: number]: boolean}>({});
+
+  useEffect(() => {
+    if (isAdminRole(user?.role)) {
+      router.replace('/admin/dashboard');
+    }
+  }, [user, router]);
   const items = cart?.items || [];
   const subtotal = items.reduce((sum, item) => sum + item.total_price, 0);
   const shipping = computeShippingEtb(subtotal);

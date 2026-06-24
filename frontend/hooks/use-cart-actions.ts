@@ -1,4 +1,5 @@
-import { useCart } from '@/lib/store';
+import { useCart, useAuth } from '@/lib/store';
+import { isAdminRole } from '@/lib/roles';
 import { api } from '@/lib/api-client';
 import { toast } from 'sonner';
 import { Product } from '@/lib/types';
@@ -6,6 +7,7 @@ import { useMutation } from './use-api';
 
 export function useCartActions() {
   const cart = useCart((state) => state.cart);
+  const user = useAuth((state) => state.user);
   const addItemLocal = useCart((state) => state.addItem);
   const setCartId = useCart((state) => state.setCartId);
 
@@ -27,6 +29,11 @@ export function useCartActions() {
   );
 
   const addToCart = async (product: Product, quantity: number = 1) => {
+    if (isAdminRole(user?.role)) {
+      toast.error('Admin accounts cannot use the customer cart.');
+      return false;
+    }
+
     let currentCartId = cart?.id;
 
     try {

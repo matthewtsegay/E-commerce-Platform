@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/store';
 import { api } from '@/lib/api-client';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { sanitizeNextPath, setAuthCookies } from '@/lib/auth';
+import { getPostLoginPath, setAuthCookies } from '@/lib/auth';
 import { getApiErrorMessage } from '@/lib/api-helpers';
 
 export default function LoginPage() {
@@ -43,8 +43,8 @@ export default function LoginPage() {
       setAuthCookies(access, refresh, userRes.data.role);
       
       toast.success('Login successful!');
-      const nextPath = sanitizeNextPath(new URLSearchParams(window.location.search).get('next'));
-      router.push(nextPath);
+      const nextParam = new URLSearchParams(window.location.search).get('next');
+      router.push(getPostLoginPath(userRes.data.role, nextParam));
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Invalid email or password.'));
     } finally {

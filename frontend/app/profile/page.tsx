@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { useAuth } from '@/lib/store';
+import { isAdminRole } from '@/lib/roles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -53,6 +54,10 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user) {
       router.push('/login');
+      return;
+    }
+    if (isAdminRole(user.role)) {
+      router.replace('/admin/dashboard');
       return;
     }
     setFormData({

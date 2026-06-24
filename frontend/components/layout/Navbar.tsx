@@ -7,6 +7,7 @@ import { ShoppingCart, User, Search, Menu, Package, Info, LayoutGrid, LayoutDash
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart, useAuth } from '@/lib/store';
+import { isAdminRole } from '@/lib/roles';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +41,7 @@ export default function Navbar() {
   
   const cart = useCart((state) => state.cart);
   const { user, logout } = useAuth();
+  const isAdmin = isAdminRole(user?.role);
   const [trendingProducts, setTrendingProducts] = useState<{id: number, title: string}[]>([]);
   
   React.useEffect(() => {
@@ -103,7 +105,7 @@ export default function Navbar() {
             <Link href="/about" className={cn("transition-colors hover:text-primary", pathname === '/about' && "text-primary")}>About</Link>
             
             {/* Admin Quick Link */}
-            {mounted && user?.role === 'admin' && (
+            {mounted && isAdmin && (
               <Link 
                 href="/admin/dashboard" 
                 className={cn(
@@ -221,12 +223,14 @@ export default function Navbar() {
                 <DropdownMenuSeparator />
                 {user ? (
                   <>
-                    <DropdownMenuItem nativeButton={false} render={<Link href="/profile" />} className="rounded-lg">
-                      <User className="mr-2 h-4 w-4" />
-                      Profile
-                    </DropdownMenuItem>
+                    {!isAdmin && (
+                      <DropdownMenuItem nativeButton={false} render={<Link href="/profile" />} className="rounded-lg">
+                        <User className="mr-2 h-4 w-4" />
+                        Profile
+                      </DropdownMenuItem>
+                    )}
                     
-                    {user.role === 'admin' && (
+                    {isAdmin && (
                       <div className="bg-primary/5 rounded-xl mt-1 mb-1 p-1 space-y-1">
                         <DropdownMenuItem nativeButton={false} render={<Link href="/admin/dashboard" />} className="rounded-lg font-bold text-primary bg-primary/10 hover:bg-primary/20 transition-all cursor-pointer">
                           <LayoutDashboard className="mr-2 h-4 w-4 shrink-0" />
@@ -239,10 +243,12 @@ export default function Navbar() {
                       </div>
                     )}
                     
-                    <DropdownMenuItem nativeButton={false} render={<Link href="/orders" />} className="rounded-lg">
-                      <Package className="mr-2 h-4 w-4" />
-                      Orders
-                    </DropdownMenuItem>
+                    {!isAdmin && (
+                      <DropdownMenuItem nativeButton={false} render={<Link href="/orders" />} className="rounded-lg">
+                        <Package className="mr-2 h-4 w-4" />
+                        Orders
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} className="rounded-lg text-destructive focus:text-destructive">
                       <LogOut className="mr-2 h-4 w-4" />
@@ -267,16 +273,18 @@ export default function Navbar() {
             </Button>
           )}
 
-          <Link href="/cart">
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingCart className="h-5 w-5" />
-              {rawCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground tabular-nums">
-                  {cartItemCount}
-                </span>
-              )}
-            </Button>
-          </Link>
+          {!isAdmin && (
+            <Link href="/cart">
+              <Button variant="ghost" size="icon" className="relative">
+                <ShoppingCart className="h-5 w-5" />
+                {rawCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground tabular-nums">
+                    {cartItemCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
+          )}
 
           {mounted ? (
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -336,7 +344,7 @@ export default function Navbar() {
                   ))}
                   
                   {/* Mobile Admin Section */}
-                  {user?.role === 'admin' && (
+                  {isAdmin && (
                     <div className="mt-4 space-y-2">
                       <span className="px-4 text-[10px] uppercase font-black text-muted-foreground tracking-widest">Admin Tools</span>
                       <Link
@@ -361,23 +369,25 @@ export default function Navbar() {
                     </div>
                   )}
                 </nav>
-                <div className="mt-auto border-t border-border/60 px-4 py-4">
-                  <Link
-                    href="/cart"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center justify-between rounded-2xl bg-primary/10 px-4 py-3 text-sm font-black text-primary ring-1 ring-primary/20"
-                  >
-                    <span className="flex items-center gap-2">
-                      <ShoppingCart className="h-4 w-4" aria-hidden />
-                      View cart
-                    </span>
-                    {rawCount > 0 ? (
-                      <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] text-primary-foreground">
-                        {cartItemCount}
+                {!isAdmin && (
+                  <div className="mt-auto border-t border-border/60 px-4 py-4">
+                    <Link
+                      href="/cart"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center justify-between rounded-2xl bg-primary/10 px-4 py-3 text-sm font-black text-primary ring-1 ring-primary/20"
+                    >
+                      <span className="flex items-center gap-2">
+                        <ShoppingCart className="h-4 w-4" aria-hidden />
+                        View cart
                       </span>
-                    ) : null}
-                  </Link>
-                </div>
+                      {rawCount > 0 ? (
+                        <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] text-primary-foreground">
+                          {cartItemCount}
+                        </span>
+                      ) : null}
+                    </Link>
+                  </div>
+                )}
               </SheetContent>
             </Sheet>
           ) : (

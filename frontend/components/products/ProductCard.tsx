@@ -10,6 +10,8 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Product } from '@/lib/types';
 import { useCartActions } from '@/hooks/use-cart-actions';
+import { useAuth } from '@/lib/store';
+import { isAdminRole } from '@/lib/roles';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import StarRating from './StarRating';
@@ -25,6 +27,8 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCartActions();
+  const user = useAuth((state) => state.user);
+  const isAdmin = isAdminRole(user?.role);
   const router = useRouter();
   const [isLiked, setIsLiked] = useState(product.is_liked || false);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
@@ -150,15 +154,17 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         </CardContent>
 
-        <CardFooter className="p-4 pt-0">
-          <Button 
-            className="w-full gap-2 font-semibold shadow-md active:scale-95 transition-transform" 
-            onClick={handleAddToCart}
-          >
-            <ShoppingCart className="h-4 w-4" />
-            Add to Cart
-          </Button>
-        </CardFooter>
+        {!isAdmin && (
+          <CardFooter className="p-4 pt-0">
+            <Button 
+              className="w-full gap-2 font-semibold shadow-md active:scale-95 transition-transform" 
+              onClick={handleAddToCart}
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Add to Cart
+            </Button>
+          </CardFooter>
+        )}
       </Card>
     </div>
   );

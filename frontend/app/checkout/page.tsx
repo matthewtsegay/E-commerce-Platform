@@ -16,6 +16,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/store';
+import { isAdminRole } from '@/lib/roles';
 import { api } from '@/lib/api-client';
 import { getApiErrorMessage } from '@/lib/api-helpers';
 import { formatEtb } from '@/lib/format-currency';
@@ -38,6 +39,10 @@ export default function CheckoutPage() {
     if (!user) {
       toast.info('Please login to complete checkout.');
       router.replace('/login?next=/checkout');
+      return;
+    }
+    if (isAdminRole(user.role)) {
+      router.replace('/admin/dashboard');
     }
   }, [user, router]);
 

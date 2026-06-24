@@ -24,7 +24,7 @@ from django.http import JsonResponse
 from django.contrib.contenttypes.models import ContentType
 from likes.models import LikedItem
 from .permissions import IsAdminOrReadOnly,ViewCustomerHistoryPermission
-from .permissions import IsAdminRole
+from .permissions import IsAdminRole, DenyStaffForCustomerWrites
 from .models import (
     Product,
     Collection,
@@ -255,7 +255,7 @@ class CartViewSet(CreateModelMixin,
                   DestroyModelMixin,
                   GenericViewSet):
     serializer_class = CartSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny, DenyStaffForCustomerWrites]
 
     def get_queryset(self):
         from django.db.models import Q
@@ -310,7 +310,7 @@ class CartViewSet(CreateModelMixin,
     ),
 )
 class CartItemViewSet(ModelViewSet):
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny, DenyStaffForCustomerWrites]
     http_method_names = ['get','post','patch','delete']
     
     def get_serializer_class(self):
@@ -385,6 +385,8 @@ class OrderViewSet(ModelViewSet):
 
 
     def create(self, request, *args, **kwargs):
+        if request.user.is_staff:
+            raise PermissionDenied("Staff users cannot place customer orders.")
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
@@ -516,6 +518,8 @@ class PaymentViewSet(GenericViewSet):
 
     @action(detail=False, methods=['POST'])
     def initiate(self, request):
+        if request.user.is_staff:
+            raise PermissionDenied("Staff users cannot initiate customer payments.")
         input_serializer = self.get_serializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
         payload = input_serializer.validated_data

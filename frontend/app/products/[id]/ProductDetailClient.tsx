@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils';
 import { api } from '@/lib/api-client';
 import StarRating from '@/components/products/StarRating';
 import { useCartActions } from '@/hooks/use-cart-actions';
+import { useAuth } from '@/lib/store';
+import { isAdminRole } from '@/lib/roles';
 
 import { extractList, getApiErrorMessage } from '@/lib/api-helpers';
 import { formatEtb } from '@/lib/format-currency';
@@ -40,6 +42,8 @@ export default function ProductDetailClient({
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
   const { addToCart } = useCartActions();
+  const user = useAuth((state) => state.user);
+  const isAdmin = isAdminRole(user?.role);
 
   // Review form state
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -274,59 +278,61 @@ export default function ProductDetailClient({
             )}
           </div>
 
-          {/* Quantity & Add to Cart */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center border rounded-lg">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                disabled={quantity <= 1}
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-              <span className="px-4 py-2 font-bold">{quantity}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setQuantity(quantity + 1)}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <Button onClick={handleAddToCart} className="flex-1 h-12">
-              <ShoppingCart className="h-5 w-5 mr-2" />
-              Add to Cart
-            </Button>
-          </div>
-
-          {/* Mobile Sticky Add to Cart */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t p-4 z-50">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center border rounded-lg">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="px-4 py-2 font-bold">{quantity}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setQuantity(quantity + 1)}
-                >
-                  <Plus className="h-4 w-4" />
+          {!isAdmin && (
+            <>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center border rounded-lg">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="px-4 py-2 font-bold">{quantity}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setQuantity(quantity + 1)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Button onClick={handleAddToCart} className="flex-1 h-12">
+                  <ShoppingCart className="h-5 w-5 mr-2" />
+                  Add to Cart
                 </Button>
               </div>
-              <Button onClick={handleAddToCart} className="flex-1 h-12">
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                Add to Cart - {formatEtb(effectivePrice * quantity)}
-              </Button>
-            </div>
-          </div>
+
+              <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t p-4 z-50">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center border rounded-lg">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      disabled={quantity <= 1}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="px-4 py-2 font-bold">{quantity}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setQuantity(quantity + 1)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Button onClick={handleAddToCart} className="flex-1 h-12">
+                    <ShoppingCart className="h-5 w-5 mr-2" />
+                    Add to Cart - {formatEtb(effectivePrice * quantity)}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Actions */}
           <div className="flex gap-2">

@@ -1,3 +1,5 @@
+import { isAdminRole } from './roles';
+
 export function setAuthCookies(access: string, refresh: string, role: 'admin' | 'user') {
   document.cookie = `access_token=${access}; path=/; max-age=900; samesite=lax`;
   document.cookie = `refresh_token=${refresh}; path=/; max-age=2592000; samesite=lax`;
@@ -15,4 +17,17 @@ export function sanitizeNextPath(nextPath: string | null | undefined) {
   if (nextPath.startsWith('//')) return '/';
   if (nextPath.includes('http://') || nextPath.includes('https://')) return '/';
   return nextPath;
+}
+
+export { isAdminRole } from './roles';
+
+export function getPostLoginPath(role: 'admin' | 'user', nextPath: string | null | undefined) {
+  if (isAdminRole(role)) {
+    const sanitized = sanitizeNextPath(nextPath);
+    if (sanitized.startsWith('/admin')) {
+      return sanitized;
+    }
+    return '/admin/dashboard';
+  }
+  return sanitizeNextPath(nextPath);
 }

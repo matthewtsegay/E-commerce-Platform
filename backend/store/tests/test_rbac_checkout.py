@@ -63,6 +63,44 @@ def test_review_update_blocked_for_non_owner(api_client):
 
 
 @pytest.mark.django_db
+def test_staff_cannot_create_cart(api_client):
+  staff_user = baker.make("core.User", is_staff=True)
+  api_client.force_authenticate(user=staff_user)
+
+  response = api_client.post("/api/v1/store/carts/", {}, format="json")
+  assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+def test_staff_cannot_add_cart_items(api_client):
+  staff_user = baker.make("core.User", is_staff=True)
+  customer, _ = Customer.objects.get_or_create(user=staff_user)
+  cart = baker.make(Cart, customer=customer)
+  product = baker.make(Product, price=10, inventory=5)
+  api_client.force_authenticate(user=staff_user)
+
+  response = api_client.post(
+    f"/api/v1/store/carts/{cart.id}/items/",
+    {"product_id": product.id, "quantity": 1},
+    format="json",
+  )
+  assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+def test_staff_cannot_place_order(api_client):
+  staff_user = baker.make("core.User", is_staff=True)
+  customer, _ = Customer.objects.get_or_create(user=staff_user)
+  product = baker.make(Product, price=15, inventory=10)
+  cart = baker.make(Cart, customer=customer)
+  baker.make(CartItem, cart=cart, product=product, quantity=1)
+  api_client.force_authenticate(user=staff_user)
+
+  response = api_client.post("/api/v1/store/orders/", {"cart_id": str(cart.id)}, format="json")
+  assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
 def test_admin_stats_requires_admin(api_client):
   user = baker.make("core.User", is_staff=False)
   api_client.force_authenticate(user=user)

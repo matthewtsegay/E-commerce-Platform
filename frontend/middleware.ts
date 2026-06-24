@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { isAdminRole } from '@/lib/roles';
 
 const protectedPaths = ['/checkout', '/orders', '/profile'];
+const customerOnlyPaths = ['/cart', '/checkout', '/orders', '/profile'];
 const adminPaths = ['/admin'];
 
 export function middleware(request: NextRequest) {
@@ -11,6 +13,13 @@ export function middleware(request: NextRequest) {
 
   const requiresAuth = protectedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
   const requiresAdmin = adminPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+  const isCustomerOnlyRoute = customerOnlyPaths.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  );
+
+  if (isCustomerOnlyRoute && accessToken && isAdminRole(role)) {
+    return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+  }
 
   if (requiresAuth && !accessToken) {
     const loginUrl = new URL('/login', request.url);
@@ -25,7 +34,7 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    if (role !== 'admin') {
+    if (!isAdminRole(role)) {
       return NextResponse.redirect(new URL('/', request.url));
     }
   }
@@ -34,5 +43,11 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/checkout/:path*', '/orders/:path*', '/profile/:path*', '/admin/:path*'],
+  matcher: [
+    '/cart/:path*',
+    '/checkout/:path*',
+    '/orders/:path*',
+    '/profile/:path*',
+    '/admin/:path*',
+  ],
 };

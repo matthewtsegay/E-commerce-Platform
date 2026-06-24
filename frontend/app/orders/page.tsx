@@ -5,6 +5,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { api } from '@/lib/api-client';
 import { useAuth } from '@/lib/store';
+import { isAdminRole } from '@/lib/roles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +46,10 @@ export default function OrdersPage() {
   useEffect(() => {
     if (!user) {
       router.push('/login?next=/orders');
+      return;
+    }
+    if (isAdminRole(user.role)) {
+      router.replace('/admin/dashboard');
       return;
     }
 
