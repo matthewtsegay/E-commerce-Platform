@@ -16,6 +16,7 @@ SECRET_KEY = env("SECRET_KEY")
 ALLOWED_HOSTS = env.list(
     "ALLOWED_HOSTS",
     default=[
+        "ecommerce-platform-nebustore.vercel.app",
         "nebi-store-backend-prod.onrender.com",
         "localhost",
         "127.0.0.1",
@@ -30,7 +31,7 @@ ALLOWED_HOSTS = env.list(
 CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS",
     default=[
-        "https://e-commerce-platform-tawny.vercel.app",
+        "https://ecommerce-platform-nebustore.vercel.app",
     ]
 )
 
@@ -42,7 +43,7 @@ CORS_ALLOWED_ORIGINS = env.list(
 CSRF_TRUSTED_ORIGINS = env.list(
     "CSRF_TRUSTED_ORIGINS",
     default=[
-        "https://e-commerce-platform-tawny.vercel.app",
+        "https://ecommerce-platform-nebustore.vercel.app",
     ]
 )
 
